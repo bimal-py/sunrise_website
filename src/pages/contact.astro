@@ -1,0 +1,62 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeading from "@/features/shared/components/SectionHeading.astro";
+import { getSiteSettings } from "@/core/config/site";
+import { buildContactContent } from "@/features/contact/data/content";
+
+const siteConfig = await getSiteSettings();
+const contactContent = buildContactContent(siteConfig);
+---
+
+<BaseLayout
+  title="Contact And Inquiry"
+  description="Contact Sunrise Photo Digital Studio for bookings, packages, merchandise, and studio inquiries."
+  pathname="/contact"
+>
+  <section class="page-intro">
+    <div class="container split-showcase">
+      <div>
+        <SectionHeading
+          eyebrow="Contact"
+          title="Make bookings and studio inquiries through the channels your customers already use."
+          description={contactContent.intro}
+        />
+
+        <div class="contact-actions">
+          <a class="button button-primary" href={contactContent.whatsappLink}>WhatsApp Inquiry</a>
+          <a class="button button-secondary" href={contactContent.phoneLink}>Call Studio</a>
+          <a class="button button-secondary" href={contactContent.emailLink}>Send Email</a>
+        </div>
+
+        <div class="contact-meta">
+          <p><strong>Phone:</strong> {siteConfig.phone}</p>
+          <p><strong>Email:</strong> {siteConfig.email}</p>
+          <p><strong>Address:</strong> {siteConfig.address}</p>
+        </div>
+      </div>
+
+      <form class="inquiry-form" action={contactContent.formAction} method="POST">
+        <input type="hidden" name="_subject" value="Sunrise Studio website inquiry" />
+        <label>
+          Full Name
+          <input type="text" name="name" placeholder="Your full name" required />
+        </label>
+        <label>
+          Phone Number
+          <input type="tel" name="phone" placeholder="Your phone number" required />
+        </label>
+        <label>
+          Inquiry Topic
+          <select name="topic">
+            {contactContent.inquiryTopics.map((item) => <option value={item}>{item}</option>)}
+          </select>
+        </label>
+        <label>
+          Message
+          <textarea name="message" rows="5" placeholder="Tell us what you need" required />
+        </label>
+        <button class="button button-primary" type="submit">Send Inquiry</button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

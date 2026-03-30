@@ -1,0 +1,398 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeading from "@/features/shared/components/SectionHeading.astro";
+import { getSiteSettings } from "@/core/config/site";
+import { getGalleryItems } from "@/features/gallery/data/content";
+import { getHomePageData } from "@/features/home/data/content";
+import { getMerchandise } from "@/features/merchandise/data/content";
+import { getServices } from "@/features/services/data/content";
+import { getVideos } from "@/features/videos/data/content";
+
+const siteConfig = await getSiteSettings();
+const home = await getHomePageData();
+const gallery = (await getGalleryItems()).slice(0, 4);
+const services = (await getServices()).slice(0, 3);
+const videos = (await getVideos()).slice(0, 2);
+const merchandise = (await getMerchandise()).slice(0, 4);
+const merchandiseInquiry = `https://wa.me/${siteConfig.whatsapp}?text=Hello%20${encodeURIComponent(siteConfig.name)},%20I%20want%20to%20ask%20about%20your%20merchandise.`;
+const featuredVideo = videos[0];
+const showcaseFrames = gallery.slice(0, 4);
+---
+
+<BaseLayout
+  title="Premium Photo Studio Website"
+  description="Elegant, SEO-friendly website for Sunrise Photo Digital Studio with gallery, services, videos, merchandise, and inquiry-driven bookings."
+  pathname="/"
+>
+  <section class="hero-section hero-home hero-minimal">
+    <div class="container hero-minimal-shell">
+      <div class="hero-intro-sequence" aria-label="Sunrise Studio intro">
+        <div class="hero-splash-text">
+          <span>{siteConfig.shortName}</span>
+        </div>
+
+        <div class="hero-logo-stage">
+          <div class="hero-scene-drift">
+            <div class="hero-logo-aura"></div>
+            <div class="hero-logo-orbit hero-logo-orbit-one"></div>
+            <div class="hero-logo-orbit hero-logo-orbit-two"></div>
+            <img
+              class="hero-main-logo"
+              src={siteConfig.logo ?? "/brand/sunrise-logo.png"}
+              alt={`${siteConfig.name} logo`}
+              width="320"
+              height="320"
+            />
+          </div>
+        </div>
+      </div>
+
+      <a class="hero-scroll-cue" href="#home-content">Scroll</a>
+    </div>
+  </section>
+
+  <section class="content-section story-showcase-section" id="home-content">
+    <div class="container">
+      <div class="story-showcase-shell">
+        <div class="story-showcase-copy">
+          <p class="story-showcase-overline">Welcome to {siteConfig.name}</p>
+          <h2>{home.hero.title}</h2>
+          <p class="story-showcase-description">{home.hero.description}</p>
+
+          <div class="story-showcase-actions">
+            <a class="button button-primary story-showcase-button" href={home.hero.secondaryCta?.href ?? "/gallery"}>
+              {home.hero.secondaryCta?.label ?? "Explore More"}
+            </a>
+
+            {featuredVideo && (
+              <button
+                class="story-showcase-play"
+                type="button"
+                data-video-open
+                aria-haspopup="dialog"
+                aria-controls="featured-video-modal"
+              >
+                <span class="story-showcase-play-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M9 7.4L17 12L9 16.6V7.4Z" fill="currentColor"></path>
+                  </svg>
+                </span>
+                <span class="story-showcase-play-copy">
+                  <strong>Play Video</strong>
+                  <small>{featuredVideo.title}</small>
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div class="story-showcase-collage" aria-label="Featured studio frames">
+          {showcaseFrames[0] && (
+            <article class={`story-frame story-frame-large accent-${showcaseFrames[0].accent}`}>
+              <img
+                class={showcaseFrames[0].image?.includes("sunrise-logo")
+                  ? "card-image card-image-logo"
+                  : "card-image"}
+                src={showcaseFrames[0].image ?? "/brand/sunrise-logo.png"}
+                alt={showcaseFrames[0].title}
+                loading="lazy"
+              />
+              <div class="story-frame-copy">
+                <span>{showcaseFrames[0].category}</span>
+                <h3>{showcaseFrames[0].title}</h3>
+              </div>
+            </article>
+          )}
+
+          {showcaseFrames[1] && (
+            <article class={`story-frame story-frame-tall accent-${showcaseFrames[1].accent}`}>
+              <img
+                class={showcaseFrames[1].image?.includes("sunrise-logo")
+                  ? "card-image card-image-logo"
+                  : "card-image"}
+                src={showcaseFrames[1].image ?? "/brand/sunrise-logo.png"}
+                alt={showcaseFrames[1].title}
+                loading="lazy"
+              />
+              <div class="story-frame-copy">
+                <span>{showcaseFrames[1].category}</span>
+              </div>
+            </article>
+          )}
+
+          {showcaseFrames[2] && (
+            <article class={`story-frame story-frame-wide accent-${showcaseFrames[2].accent}`}>
+              <img
+                class={showcaseFrames[2].image?.includes("sunrise-logo")
+                  ? "card-image card-image-logo"
+                  : "card-image"}
+                src={showcaseFrames[2].image ?? "/brand/sunrise-logo.png"}
+                alt={showcaseFrames[2].title}
+                loading="lazy"
+              />
+              <div class="story-frame-copy">
+                <span>{showcaseFrames[2].category}</span>
+                <h3>{showcaseFrames[2].title}</h3>
+              </div>
+            </article>
+          )}
+
+          {showcaseFrames[3] && (
+            <article class={`story-frame story-frame-portrait accent-${showcaseFrames[3].accent}`}>
+              <img
+                class={showcaseFrames[3].image?.includes("sunrise-logo")
+                  ? "card-image card-image-logo"
+                  : "card-image"}
+                src={showcaseFrames[3].image ?? "/brand/sunrise-logo.png"}
+                alt={showcaseFrames[3].title}
+                loading="lazy"
+              />
+              <div class="story-frame-copy">
+                <span>{showcaseFrames[3].category}</span>
+              </div>
+            </article>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {featuredVideo && (
+    <div class="video-modal" id="featured-video-modal" data-video-modal hidden>
+      <div class="video-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="featured-video-title">
+        <div class="video-modal-header">
+          <div>
+            <p class="eyebrow">Featured Video</p>
+            <h3 id="featured-video-title">{featuredVideo.title}</h3>
+          </div>
+          <button class="video-modal-close" type="button" data-video-close aria-label="Close video">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+
+        <div class="video-modal-frame">
+          <iframe
+            title={featuredVideo.title}
+            data-video-frame
+            data-src={featuredVideo.embedUrl}
+            src=""
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <section class="content-section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Studio Strengths"
+        title="A premium studio website that is clear, fast, and easy to trust."
+        description="Every section is designed to help visitors discover your work, understand your services, compare printed products, and contact you quickly."
+      />
+
+      <div class="three-column-grid">
+        {
+          home.highlights.map((item) => (
+            <article class="feature-card">
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section section-dark">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Services"
+        title="Professional services for weddings, portraits, events, and everyday studio needs."
+        description="Each service is presented clearly so visitors can understand what you offer, what kind of work you handle, and how to inquire without confusion."
+      />
+
+      <div class="three-column-grid">
+        {
+          services.map((service) => (
+            <article class="service-card">
+              <p class="eyebrow">{service.priceLabel}</p>
+              <h3>{service.title}</h3>
+              <p>{service.summary}</p>
+              <ul class="chip-list">
+                {service.highlights.map((item) => <li>{item}</li>)}
+              </ul>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Featured Gallery"
+        title="A curated portfolio that gives visitors a clear feel for your style."
+        description="The homepage highlights your strongest categories, while the gallery page can hold the wider story of your studio work."
+      />
+
+      <div class="photo-grid">
+        {
+          gallery.map((item) => (
+            <article class={`photo-card accent-${item.accent}`}>
+              <div class="photo-media">
+                <img
+                  class={item.image?.includes("sunrise-logo") ? "card-image card-image-logo" : "card-image"}
+                  src={item.image ?? "/brand/sunrise-logo.png"}
+                  alt={item.title}
+                  loading="lazy"
+                />
+                <span>{item.category}</span>
+              </div>
+              <div class="photo-card-copy">
+                <h3>{item.title}</h3>
+                <p>{item.summary}</p>
+                <small>{item.location}</small>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container split-showcase">
+      <div>
+        <SectionHeading
+          eyebrow="Video Storytelling"
+          title="Video highlights that stay rich for visitors and light for performance."
+          description="Long-form wedding films and social reels are best embedded from platforms like YouTube and Facebook, helping the site stay fast while still feeling dynamic."
+        />
+      </div>
+
+      <div class="stacked-cards">
+        {
+          videos.map((video) => (
+            <article class="video-card">
+              <p class="eyebrow">{video.provider}</p>
+              <h3>{video.title}</h3>
+              <p>{video.summary}</p>
+              <a href="/videos">View video collection</a>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section section-dark">
+    <div class="container split-showcase">
+      <div>
+        <SectionHeading
+          eyebrow="Merchandise"
+          title="A merchandise catalog that feels like ecommerce while still converting through inquiry."
+          description="Products can show category, offer badge, current price, previous price, and availability without needing an online payment gateway yet."
+        />
+      </div>
+
+      <div class="catalog-preview-grid">
+        {
+          merchandise.map((item) => (
+            <article class={`product-catalog-card accent-${item.accent ?? "gold"}`}>
+              <div class="product-media">
+                <img
+                  class={item.image?.includes("sunrise-logo") ? "card-image card-image-logo" : "card-image"}
+                  src={item.image ?? "/brand/sunrise-logo.png"}
+                  alt={item.title}
+                  loading="lazy"
+                />
+                <span>{item.category}</span>
+                {item.discountLabel && <strong class="discount-pill">{item.discountLabel}</strong>}
+              </div>
+              <div class="product-copy">
+                <p class="product-category">{item.category}</p>
+                <h3>{item.title}</h3>
+                <p>{item.summary}</p>
+                <div class="price-line">
+                  <strong class="price-current">{item.currentPrice}</strong>
+                  {item.originalPrice && <span class="price-old">{item.originalPrice}</span>}
+                </div>
+                <div class="product-actions">
+                  <span>{item.availability}</span>
+                  <a class="inline-link" href={merchandiseInquiry}>Send Inquiry</a>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="How The Website Works"
+        title="A cleaner path from first impression to confirmed inquiry."
+        description="The website keeps a maintainable structure behind the scenes while guiding visitors through storytelling, service discovery, and product presentation."
+      />
+
+      <div class="three-column-grid">
+        {
+          home.process.map((step) => (
+            <article class="feature-card">
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline>
+  const openButton = document.querySelector("[data-video-open]");
+  const modal = document.querySelector("[data-video-modal]");
+  const frame = modal?.querySelector("[data-video-frame]");
+  const closeButtons = modal?.querySelectorAll("[data-video-close]");
+
+  const getAutoplayUrl = (src) => {
+    if (!src) return "";
+    return src.includes("?") ? `${src}&autoplay=1&rel=0` : `${src}?autoplay=1&rel=0`;
+  };
+
+  const closeModal = () => {
+    if (!(modal instanceof HTMLElement) || !(frame instanceof HTMLIFrameElement)) return;
+    modal.hidden = true;
+    document.body.classList.remove("modal-open");
+    frame.src = "";
+  };
+
+  if (openButton instanceof HTMLButtonElement && modal instanceof HTMLElement && frame instanceof HTMLIFrameElement) {
+    openButton.addEventListener("click", () => {
+      modal.hidden = false;
+      document.body.classList.add("modal-open");
+      frame.src = getAutoplayUrl(frame.dataset.src ?? "");
+    });
+
+    closeButtons?.forEach((button) => {
+      button.addEventListener("click", closeModal);
+    });
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modal.hidden) {
+        closeModal();
+      }
+    });
+  }
+</script>

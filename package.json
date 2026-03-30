@@ -1,0 +1,30 @@
+{
+  "name": "sunrise-photo-digital-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "studio": "sanity dev",
+    "studio:local": "CHOKIDAR_USEPOLLING=1 sanity dev --host 127.0.0.1 --port 3333",
+    "studio:build": "sanity build"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "latest",
+    "@sanity/client": "latest",
+    "@sanity/image-url": "latest",
+    "@sanity/vision": "latest",
+    "astro": "latest",
+    "groq": "latest",
+    "sanity": "latest",
+    "styled-components": "^6.3.12"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.8",
+    "typescript": "latest"
+  }
+}

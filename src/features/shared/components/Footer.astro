@@ -1,0 +1,32 @@
+---
+import { getSiteSettings, navigationLinks } from "@/core/config/site";
+
+const siteConfig = await getSiteSettings();
+---
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <p class="footer-kicker">Sunrise Photo Digital Studio</p>
+      <h2>Memories framed with warmth, clarity, and cinematic craft.</h2>
+      <p>{siteConfig.description}</p>
+    </div>
+
+    <div>
+      <p class="footer-kicker">Explore</p>
+      <div class="footer-links">
+        {navigationLinks.map((link) => <a href={link.href}>{link.label}</a>)}
+      </div>
+    </div>
+
+    <div>
+      <p class="footer-kicker">Reach Out</p>
+      <div class="footer-links">
+        <a href={`tel:${siteConfig.phone}`}>{siteConfig.phone}</a>
+        <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a>
+        <a href={`https://wa.me/${siteConfig.whatsapp}`}>WhatsApp</a>
+        {siteConfig.socialLinks.map((item) => <a href={item.href}>{item.label}</a>)}
+      </div>
+    </div>
+  </div>
+</footer>

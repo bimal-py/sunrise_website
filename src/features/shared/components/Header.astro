@@ -1,0 +1,45 @@
+---
+import NavIcon from "@/features/shared/components/NavIcon.astro";
+
+const { pathname } = Astro.url;
+
+type NavIconName = "home" | "services" | "gallery" | "videos" | "merchandise" | "about" | "contact";
+
+const navItems: Array<{ label: string; href: string; icon: NavIconName }> = [
+  { label: "Home", href: "/", icon: "home" },
+  { label: "Services", href: "/services", icon: "services" },
+  { label: "Gallery", href: "/gallery", icon: "gallery" },
+  { label: "Videos", href: "/videos", icon: "videos" },
+  { label: "Merchandise", href: "/merchandise", icon: "merchandise" },
+  { label: "About", href: "/about", icon: "about" },
+  { label: "Contact", href: "/contact", icon: "contact" }
+];
+
+const mobileLinks = navItems.filter((item) =>
+  ["/", "/services", "/gallery", "/contact"].includes(item.href)
+);
+---
+
+<header class="site-header">
+  <nav class="floating-nav" aria-label="Primary">
+    {
+      navItems.map((link) => (
+        <a class={pathname === link.href ? "is-active" : undefined} href={link.href}>
+          {link.label}
+        </a>
+      ))
+    }
+  </nav>
+
+  <nav class="mobile-floating-nav" aria-label="Mobile Primary">
+    {
+      mobileLinks.map((link) => (
+        <a class={pathname === link.href ? "is-active" : undefined} href={link.href} aria-label={link.label}>
+          <span class="mobile-nav-icon" aria-hidden="true">
+            <NavIcon name={link.icon} className="mobile-nav-icon-svg" />
+          </span>
+        </a>
+      ))
+    }
+  </nav>
+</header>

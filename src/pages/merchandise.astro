@@ -1,0 +1,68 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeading from "@/features/shared/components/SectionHeading.astro";
+import { getSiteSettings } from "@/core/config/site";
+import { getMerchandise } from "@/features/merchandise/data/content";
+
+const siteConfig = await getSiteSettings();
+const merchandise = await getMerchandise();
+const merchandiseInquiry = `https://wa.me/${siteConfig.whatsapp}?text=Hello%20Sunrise%20Photo%20Digital%20Studio,%20I%20want%20to%20ask%20about%20your%20merchandise.`;
+---
+
+<BaseLayout
+  title="Studio Merchandise"
+  description="Browse albums, framed prints, canvas prints, mini books, and custom studio merchandise available on inquiry."
+  pathname="/merchandise"
+>
+  <section class="page-intro">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Merchandise"
+        title="Albums, frames, prints, and keepsakes presented with a clear product-first layout."
+        description="This page helps you present studio products more like an ecommerce catalog while keeping ordering simple through inquiry and WhatsApp."
+      />
+
+      <div class="catalog-banner">
+        <div>
+          <strong>Inquiry-first storefront</strong>
+          <p>Show product prices, offers, and availability clearly before you decide to add online payments later.</p>
+        </div>
+        <a class="button button-primary" href={merchandiseInquiry}>Ask About Products</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container product-grid">
+      {
+        merchandise.map((item) => (
+          <article class={`product-catalog-card accent-${item.accent ?? "gold"}`}>
+            <div class="product-media">
+              <img
+                class={item.image?.includes("sunrise-logo") ? "card-image card-image-logo" : "card-image"}
+                src={item.image ?? "/brand/sunrise-logo.png"}
+                alt={item.title}
+                loading="lazy"
+              />
+              <span>{item.category}</span>
+              {item.discountLabel && <strong class="discount-pill">{item.discountLabel}</strong>}
+            </div>
+            <div class="product-copy">
+              <p class="product-category">{item.category}</p>
+              <h2>{item.title}</h2>
+              <p>{item.summary}</p>
+              <div class="price-line">
+                <strong class="price-current">{item.currentPrice}</strong>
+                {item.originalPrice && <span class="price-old">{item.originalPrice}</span>}
+              </div>
+              <div class="product-actions">
+                <span>{item.availability}</span>
+                <a class="inline-link" href={merchandiseInquiry}>Send Inquiry</a>
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

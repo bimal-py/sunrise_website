@@ -1,0 +1,48 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeading from "@/features/shared/components/SectionHeading.astro";
+import { getGalleryItems } from "@/features/gallery/data/content";
+
+const gallery = await getGalleryItems();
+---
+
+<BaseLayout
+  title="Photo Gallery"
+  description="Browse wedding, portrait, family, celebration, and event photography from Sunrise Photo Digital Studio."
+  pathname="/gallery"
+>
+  <section class="page-intro">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Gallery"
+        title="Wedding, portrait, family, and event photography presented in one polished portfolio."
+        description="This gallery is built to showcase many images without feeling heavy, helping visitors browse your style, categories, and strongest work smoothly."
+      />
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container photo-grid photo-grid-large">
+      {
+        gallery.map((item) => (
+          <article class={`photo-card accent-${item.accent}`}>
+            <div class="photo-media">
+              <img
+                class={item.image?.includes("sunrise-logo") ? "card-image card-image-logo" : "card-image"}
+                src={item.image ?? "/brand/sunrise-logo.png"}
+                alt={item.title}
+                loading="lazy"
+              />
+              <span>{item.category}</span>
+            </div>
+            <div class="photo-card-copy">
+              <h3>{item.title}</h3>
+              <p>{item.summary}</p>
+              <small>{item.location}</small>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

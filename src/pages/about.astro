@@ -1,0 +1,35 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeading from "@/features/shared/components/SectionHeading.astro";
+
+const principles = [
+  "Warm and premium visual storytelling",
+  "Search-friendly structure for a local studio business",
+  "Fast pages that stay easy for families to browse",
+  "Dynamic content management for gallery, videos, and products"
+];
+---
+
+<BaseLayout
+  title="About Sunrise Studio"
+  description="Learn about the vision, style, and digital direction behind Sunrise Photo Digital Studio."
+  pathname="/about"
+>
+  <section class="page-intro">
+    <div class="container split-showcase">
+      <div>
+        <SectionHeading
+          eyebrow="About The Studio"
+          title="A local studio brand focused on heartfelt photography and polished presentation."
+          description="Sunrise Photo Digital Studio is positioned as a warm, reliable photography brand for weddings, portraits, events, passport photos, reels, and printed keepsakes in Nepal."
+        />
+      </div>
+      <div class="feature-card">
+        <h3>What this website is built to do</h3>
+        <ul class="chip-list">
+          {principles.map((item) => <li>{item}</li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

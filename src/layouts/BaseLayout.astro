@@ -1,0 +1,63 @@
+---
+import Footer from "@/features/shared/components/Footer.astro";
+import Header from "@/features/shared/components/Header.astro";
+import Starfield from "@/features/shared/components/Starfield.astro";
+import { buildLocalBusinessSchema, buildMetadata } from "@/core/seo/metadata";
+import { getSiteSettings } from "@/core/config/site";
+
+import "@/styles/global.css";
+
+type Props = {
+  title: string;
+  description: string;
+  pathname?: string;
+  image?: string;
+};
+
+const { title, description, pathname = "/", image } = Astro.props;
+const settings = await getSiteSettings();
+const metadata = buildMetadata({ title, description, pathname, image: image ?? settings.logo ?? image, settings });
+const localBusinessSchema = buildLocalBusinessSchema(settings);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{metadata.pageTitle}</title>
+    <meta name="description" content={metadata.description} />
+    <meta name="keywords" content={settings.keywords.join(", ")} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={metadata.canonical} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={metadata.pageTitle} />
+    <meta property="og:description" content={metadata.description} />
+    <meta property="og:url" content={metadata.canonical} />
+    <meta property="og:image" content={metadata.ogImage} />
+    <meta property="og:locale" content={settings.locale} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={metadata.pageTitle} />
+    <meta name="twitter:description" content={metadata.description} />
+    <meta name="twitter:image" content={metadata.ogImage} />
+    <link rel="icon" type="image/png" href={settings.logo ?? "/brand/sunrise-logo.png"} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+  </head>
+
+  <body>
+    <Starfield />
+    <div class="page-shell">
+      <Header />
+      <main>
+        <slot />
+      </main>
+      <Footer />
+    </div>
+  </body>
+</html>

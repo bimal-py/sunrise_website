@@ -1,0 +1,48 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeading from "@/features/shared/components/SectionHeading.astro";
+import { getVideos } from "@/features/videos/data/content";
+
+const videos = await getVideos();
+---
+
+<BaseLayout
+  title="Studio Videos"
+  description="Watch highlight films, reels, behind-the-scenes clips, and social-ready studio videos."
+  pathname="/videos"
+>
+  <section class="page-intro">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Videos"
+        title="Highlight films, reels, and behind-the-scenes videos presented without slowing the website."
+        description="Your website can stay fast while still featuring wedding highlight films, engagement reels, and studio content through clean video embeds."
+      />
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container video-grid">
+      {
+        videos.map((video) => (
+          <article class="video-panel">
+            <div class="video-frame">
+              <iframe
+                src={video.embedUrl}
+                title={video.title}
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+              />
+            </div>
+            <div class="video-copy">
+              <p class="eyebrow">{video.provider} · {video.duration}</p>
+              <h2>{video.title}</h2>
+              <p>{video.summary}</p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,45 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeading from "@/features/shared/components/SectionHeading.astro";
+import { getServices } from "@/features/services/data/content";
+
+const services = await getServices();
+---
+
+<BaseLayout
+  title="Photography Services"
+  description="Explore wedding photography, portrait sessions, event coverage, passport photos, and video services from Sunrise Photo Digital Studio in Nepal."
+  pathname="/services"
+>
+  <section class="page-intro">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Studio Services"
+        title="Photography and video services designed for real families, events, and lasting memories."
+        description="From weddings and portraits to passport photos and event coverage, Sunrise Photo Digital Studio offers flexible services tailored to how local clients actually book."
+      />
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container service-list">
+      {
+        services.map((service) => (
+          <article class="service-panel">
+            <div>
+              <p class="eyebrow">{service.priceLabel}</p>
+              <h2>{service.title}</h2>
+              <p>{service.summary}</p>
+            </div>
+            <div>
+              <p><strong>Turnaround:</strong> {service.turnaround}</p>
+              <ul class="chip-list">
+                {service.highlights.map((item) => <li>{item}</li>)}
+              </ul>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>
