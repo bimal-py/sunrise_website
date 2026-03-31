@@ -12,7 +12,7 @@ export const siteConfig = {
   locale: "en_NP",
   phone: "+977-9800000000",
   email: "hello@sunrisedigitalphotostudio.com.np",
-  whatsapp: "9779800000000",
+  whatsapp: "9779866060450",
   address: "Your studio location, Nepal",
   keywords: [
     "Sunrise Photo Digital Studio",

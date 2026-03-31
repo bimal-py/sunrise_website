@@ -3,6 +3,14 @@ import groq from "groq";
 import { fetchSanityOrFallback } from "@/core/sanity/client";
 
 export type HomePageData = {
+  sections: {
+    strengths: { eyebrow: string; title: string; description: string };
+    services: { eyebrow: string; title: string; description: string };
+    gallery: { eyebrow: string; title: string; description: string };
+    videos: { eyebrow: string; title: string; description: string };
+    merchandise: { eyebrow: string; title: string; description: string };
+    process: { eyebrow: string; title: string; description: string };
+  };
   hero: {
     eyebrow: string;
     title: string;
@@ -17,6 +25,44 @@ export type HomePageData = {
 };
 
 const fallbackHomePage: HomePageData = {
+  sections: {
+    strengths: {
+      eyebrow: "Studio Strengths",
+      title: "A premium studio website that is clear, fast, and easy to trust.",
+      description:
+        "Every section is designed to help visitors discover your work, understand your services, compare printed products, and contact you quickly."
+    },
+    services: {
+      eyebrow: "Services",
+      title: "Professional services for weddings, portraits, events, and everyday studio needs.",
+      description:
+        "Each service is presented clearly so visitors can understand what you offer, what kind of work you handle, and how to inquire without confusion."
+    },
+    gallery: {
+      eyebrow: "Featured Gallery",
+      title: "A curated portfolio that gives visitors a clear feel for your style.",
+      description:
+        "The homepage highlights your strongest categories, while the gallery page can hold the wider story of your studio work."
+    },
+    videos: {
+      eyebrow: "Video Storytelling",
+      title: "Video highlights that stay rich for visitors and light for performance.",
+      description:
+        "Long-form wedding films and social reels are best embedded from platforms like YouTube and Facebook, helping the site stay fast while still feeling dynamic."
+    },
+    merchandise: {
+      eyebrow: "Merchandise",
+      title: "A merchandise catalog that feels like ecommerce while still converting through inquiry.",
+      description:
+        "Products can show category, offer badge, current price, previous price, and availability without needing an online payment gateway yet."
+    },
+    process: {
+      eyebrow: "How The Website Works",
+      title: "A cleaner path from first impression to confirmed inquiry.",
+      description:
+        "The website keeps a maintainable structure behind the scenes while guiding visitors through storytelling, service discovery, and product presentation."
+    }
+  },
   hero: {
     eyebrow: "Wedding stories, portraits, passport photos, reels, albums, and framed prints",
     title: "Photographs that feel elegant today and meaningful for years to come.",
@@ -73,6 +119,7 @@ const fallbackHomePage: HomePageData = {
 };
 
 const homePageQuery = groq`*[_type == "homePage"][0]{
+  sections,
   hero,
   highlights,
   stats,
@@ -80,5 +127,21 @@ const homePageQuery = groq`*[_type == "homePage"][0]{
   testimonials
 }`;
 
-export const getHomePageData = async () =>
-  fetchSanityOrFallback<HomePageData>(homePageQuery, fallbackHomePage);
+export const getHomePageData = async (): Promise<HomePageData> => {
+  const data = await fetchSanityOrFallback<Partial<HomePageData>>(homePageQuery, fallbackHomePage);
+
+  return {
+    sections: {
+      ...fallbackHomePage.sections,
+      ...data.sections
+    },
+    hero: {
+      ...fallbackHomePage.hero,
+      ...data.hero
+    },
+    highlights: data.highlights?.length ? data.highlights : fallbackHomePage.highlights,
+    stats: data.stats?.length ? data.stats : fallbackHomePage.stats,
+    process: data.process?.length ? data.process : fallbackHomePage.process,
+    testimonials: data.testimonials?.length ? data.testimonials : fallbackHomePage.testimonials
+  };
+};

@@ -16,6 +16,10 @@ const contactContent = buildContactContent(siteConfig);
   <section class="page-intro">
     <div class="container split-showcase">
       <div>
+        <div class="contact-success-banner" data-contact-success hidden>
+          Your inquiry was sent successfully. We will get back to you soon.
+        </div>
+
         <SectionHeading
           eyebrow="Contact"
           title="Make bookings and studio inquiries through the channels your customers already use."
@@ -35,8 +39,10 @@ const contactContent = buildContactContent(siteConfig);
         </div>
       </div>
 
-      <form class="inquiry-form" action={contactContent.formAction} method="POST">
+      <form class="inquiry-form" action={contactContent.formAction} method="POST" data-contact-form>
         <input type="hidden" name="_subject" value="Sunrise Studio website inquiry" />
+        <input type="hidden" name="_captcha" value="false" />
+        <input type="hidden" name="_next" value="" data-contact-next />
         <label>
           Full Name
           <input type="text" name="name" placeholder="Your full name" required />
@@ -55,8 +61,56 @@ const contactContent = buildContactContent(siteConfig);
           Message
           <textarea name="message" rows="5" placeholder="Tell us what you need" required />
         </label>
-        <button class="button button-primary" type="submit">Send Inquiry</button>
+        <button class="button button-primary" type="submit" data-contact-submit>Send Inquiry</button>
       </form>
     </div>
   </section>
+
+  <script>
+    const contactForm = document.querySelector("[data-contact-form]");
+    const nextField = document.querySelector("[data-contact-next]");
+    const successBanner = document.querySelector("[data-contact-success]");
+    const submitButton = document.querySelector("[data-contact-submit]");
+    const currentUrl = new URL(window.location.href);
+
+    if (nextField instanceof HTMLInputElement) {
+      nextField.value = `${window.location.origin}/`;
+    }
+
+    if (successBanner instanceof HTMLElement && currentUrl.searchParams.get("submitted") === "1") {
+      successBanner.hidden = false;
+      successBanner.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    if (contactForm instanceof HTMLFormElement) {
+      contactForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (submitButton instanceof HTMLButtonElement) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Sending...";
+        }
+
+        const formData = new FormData(contactForm);
+
+        try {
+          const response = await fetch(contactForm.action, {
+            method: "POST",
+            body: formData,
+            headers: {
+              Accept: "application/json"
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error("Form submission failed");
+          }
+
+          window.location.assign("/");
+        } catch (_error) {
+          contactForm.submit();
+        }
+      });
+    }
+  </script>
 </BaseLayout>
