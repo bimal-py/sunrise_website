@@ -1,6 +1,6 @@
 # Sunrise Photo Digital Studio
 
-Premium, SEO-friendly Astro website scaffold for `sunrisedigitalphotostudio.com.np`, designed for dynamic family-managed content with Sanity.
+Premium, SEO-friendly Astro website scaffold for `sunrisedigitalphotostudio.com.np`, designed for dynamic family-managed content with Sanity..
 
 ## Stack
 
