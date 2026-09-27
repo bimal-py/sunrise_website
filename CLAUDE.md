@@ -1,0 +1,256 @@
+@AGENTS.md
+
+# Sunrise Photo Studio: Project Prompt (read before every task)
+
+**Sunrise Photo Studio** (सनराइज फोटो स्टुडियो; the domain's longer form is "Sunrise Digital Photo Studio") is
+a photo and film studio in **Arjunchaupari-5, Syangja, Nepal**. It photographs and films weddings, pasni,
+bratabandha, chaurasi puja, portraits, events and panchebaja, and prints premium albums, frames, canvas and
+photo prints. This site is its home: services, prints, films (from its YouTube channel), a blog, about,
+contact. English-first; Nepali alongside where it helps.
+
+It's built like `../mero_vidyalaya` (same stack, architecture, rules and "no AI-template look") with the
+**navbar and breadcrumb style of `../personal_website`** and the **black-and-gold theme of the logo**.
+If a request conflicts with a rule here, say so and ask.
+
+Guiding line: **every visual element has a purpose. Remove rather than add. Simplify rather than
+decorate. Clarify rather than impress.** The photos are the decoration.
+
+---
+
+**Live:** https://sunrisedigitalphotostudio.com.np (`NEXT_PUBLIC_SITE_URL`). GitHub `bimal-py/sunrise_website`
+(its old history is an Astro + Sanity version of the site). Commits are authored by the owner only:
+**no Co-Authored-By or AI attribution lines**. Commit/push only when asked.
+
+## 0. Before every task: review the owner's changes
+
+Run `git status` / `git diff` (and `git log -5`), check the changes against this file (tokens, radius/
+shadow rules, layout, SEO, performance, content rules, generated files), and tell the owner what you found
+**before** building on top. Propose, then act; don't silently revert.
+
+## 1. Stack
+
+- **Next.js 16** (App Router, Turbopack) + **React 19** + **TypeScript strict** + **Tailwind CSS v4**.
+  Read `node_modules/next/dist/docs/` before using a Next API. `params` / `searchParams` are Promises.
+- Icons: **`lucide-react` only** (outline). Brand marks lucide dropped (Facebook, YouTube, WhatsApp) live in
+  `shared/components/brand/social-icons.tsx`. No emoji.
+- Blog: MDX via `next-mdx-remote/rsc` + `remark-gfm` + `rehype-slug`.
+- Fonts (`app/layout.tsx`): **Inter** (body/UI), **Cormorant Garamond** (h1/h2 only, echoes the logo's
+  lettering), **Noto Sans Devanagari** for `lang="ne"` (not preloaded). All variable.
+- **No database yet.** Every feature reads through a repository interface (`features/*/domain/repositories.ts`),
+  so it can move to **Supabase** (like `../personal_website`) **without touching pages**. Planned next:
+  Supabase tables seeded from the `*.seed.ts` files, an admin dashboard, a stored enquiry form, a photo gallery.
+
+## 2. Structure (feature-first clean architecture)
+
+```
+app/                         Routes ONLY: metadata + params → render a View.
+  page.tsx                   home
+  services/, services/[slug] prints/, prints/[slug] films/ (?category=, noindex), films/[slug]
+  blogs/ (?tag=, noindex), blogs/[slug]   about/ contact/ privacy/
+  sitemap.ts robots.ts manifest.ts not-found.tsx error.tsx icon.png apple-icon.png favicon.ico (generated)
+features/<feature>/domain|data|presentation   (services, prints, films, blog, home, site)
+  services/data/services.seed.ts   the studio's services (content lives here)
+  prints/data/prints.seed.ts       albums, frames, canvas, prints, photo books
+  films/data/generated/            videos.json + images.json (generated, never hand-edit)
+shared/domain/offering.ts          what services and prints share (name, nameNe, sections, faqs, inquiry)
+shared/components/  brand/{logo,social-icons} navigation/{floating-nav,breadcrumbs}
+                    content/{offering-card,offering-article,offering-icon,inquiry-card}
+                    ui/{container,sprite-button,badge,section-heading,empty-state,view-all-link} seo/json-ld
+lib/                routes.ts (EVERY internal URL) config/site.ts (name, phone, WhatsApp, email, address, socials)
+                    constants/navigation.ts seo/{metadata,breadcrumbs,structured-data} utils/ image-loader.ts
+data/films/         channel.json (channel id + extra video ids) · curation.json (hand-edited titles/categories)
+content/blog/*.mdx  one file = one post
+assets/             originals (not served): brand/sunrise-logo.png, images/{blog,films}/
+scripts/            fetch-youtube.py · optimize-images.py
+```
+
+Rules: pages call **repositories**, never JSON/seed files. Repositories are `server-only`. Client components
+get plain props. `@/` imports, kebab-case files, named exports (except route files). **Build links with
+`routes.*`**. Contact details come only from `siteConfig` (and `whatsappUrl()`).
+
+## 3. Design system (tokens in `app/globals.css`, never raw hex in components)
+
+Black and gold, from the logo. Dark neutral page; one gold.
+
+| Token | Tailwind | Value | Use |
+|---|---|---|---|
+| `--background` | `bg-background` | `#0B0B0C` | page (neutral black, no blue/brown tint) |
+| `--surface` / `--surface-raised` | `bg-surface` / `bg-raised` | `#141415` / `#1C1C1E` | cards, footer / inputs, hover rows |
+| `--surface-nav` / `-active` | `bg-nav` / `bg-nav-active` | `#111112` / `#25211A` | floating pill + dock / active item |
+| `--foreground-strong` | `text-strong` | `#F4F2EE` | headings |
+| `--foreground` / `--muted` | `text-foreground` / `text-muted` | `#D8D5CF` / `#A09C94` | body / secondary (7:1) |
+| `--border` / `--border-strong` | `border-line` / `border-line-strong` | `#262628` / `#3A3A3D` | dividers / nav, inputs, chips |
+| `--primary` | `bg-primary` `text-primary` | `#E0B24C` | logo gold: buttons, links, active, eyebrows, icons |
+| `--primary-strong` | `hover:bg-primary-strong` | `#F0C96B` | hover (lighter on dark) |
+| `--primary-soft` | `bg-primary-soft` | `#221D12` | selected chips, badges |
+| `--on-primary` | `text-on-primary` | `#0B0B0C` | text on gold (never white) |
+
+- **Radius:** controls `rounded-control` 6px · cards `rounded-card` 8px · panels `rounded-panel` 10px ·
+  chips, icon circles and the nav pill/dock `rounded-full`.
+- **Buttons: `SpriteButton` only** (`shared/components/ui/sprite-button.tsx`), the owner's portfolio
+  button in gold: a brush-stroke sprite (`/brand/ink-sprite.webp`, 23 frames) masks the gold fill, painted in
+  or out frame by frame on hover/focus. `primary` = solid gold at rest, brushes away to a gold outline with
+  gold text; `secondary` = gold outline (70%) with white text; on hover/focus the text turns gold and four
+  gold autofocus corner brackets snap onto it (CSS only, echoes the splash). No ink on secondary (owner's call). 44px tall, 6px radius
+  (the nav's WhatsApp button passes `rounded-full`). It handles internal links, external links (new tab for
+  http) and `type="submit"`. No other button styles; text links use `ViewAllLink` or plain gold links.
+- **Shadows:** none on cards (borders do the work). The only shadow: the floating nav pill, dock and More menu.
+- **Hover:** 150ms colour/border change. No lifts, scales, glows, parallax or entrance animations.
+- **The one exception: the home splash** (owner's request, 2026-09-27; loader idea from aakashacharya.com.np).
+  A look through the studio's camera at a sunrise: viewfinder (frame corners, rule-of-thirds grid, mono
+  readouts `AF-S · f/2.8 · 1/250 · ISO 100` / `RAW`), the `SunriseMark` draws (horizon, sun rises, rays) while
+  autofocus brackets hunt and lock gold, "Sunrise / Photo Studio", a mono `Capturing 00→100` counter (all CSS
+  keyframes on server-rendered markup, globals.css "Splash": shows on first paint without JS). Then (JS) the
+  **shutter** fires: black curtains snap shut, the viewfinder is removed while closed, they reopen on just the
+  sun (the status line goes with the viewfinder; the owner removed the "Captured 0001" swap), and the sun glides and shrinks onto the hero's
+  `.hero-mark` (FLIP transform + stroke width) while the hero text (`.hero-reveal`) fades in; if the hero
+  mark isn't on screen it fades instead. Without JS a CSS fade ends it at 2.5s. The page renders underneath the whole time (no delay to content, LCP or crawlers). **Home
+  only, on every full load** (visit, reload); not replayed when clicking Home from another page
+  (`isEntryPage`). Tap/any key skips; off with reduced motion. The JS ending is **synced to the CSS
+  timeline** (elapsed = now − first-contentful-paint): if the script arrives after the CSS fallback has
+  already ended the splash (slow phones), it never restarts it, never locks scroll, never hides the hero. No dashed circles/diagonals (owner removed
+  them): lines in the splash are camera UI only. Both marks keep the same geometry (only size and
+  `strokeWidth` differ).
+  **No video and no AI footage** for it: a clip has to download before it can play (slow on Nepali mobile
+  data, blocked by iOS low-power autoplay) and AI video breaks the real-work-only rule.
+- **Banned:** gradients, gradient text, glass/blur, glows, dotted grids, blobs, abstract shapes, stock or
+  AI images, decorative illustrations, repeated logo art, big decorative icons.
+- **Type:** h1/h2 Cormorant 600 (it runs small: H1 40–60px, H2 30–40px); h3 and UI Inter. Eyebrow
+  `eyebrowClasses` (11px, uppercase, 0.14em, gold). Nepali lines sit under their English title.
+- **Container:** `<Container>` 1280px (`narrow` 1152px for detail pages), gutters `px-4 sm:px-6 lg:px-8`.
+
+### Navigation (personal_website style)
+
+- Items in `lib/constants/navigation.ts`: Home · Films · Services · Prints · About · Blog · Contact, in the
+  order of the home page's sections. Each has `href` (on home: a section anchor, `/#films`; smooth scroll +
+  `replaceState`) and `route` (everywhere else: the section's page, `/films`). Blog has no home section.
+  Active item: scroll-spy on home (`useActiveSection`, IntersectionObserver), the path elsewhere.
+- **Desktop (lg+):** `FloatingNav` pill fixed `top-4` centre, **no logo**: the items with icons (active =
+  `bg-nav-active` pill, gold icon) + the gold WhatsApp `SpriteButton`. On home it's transparent (no bg/border/shadow) at the top and becomes the solid
+  floating pill once scrolled (`scrollY > 0`); on other pages it's solid from the first paint. `SiteHeader`
+  is only an `h-20` spacer (inner pages clear the pill; the home hero pulls up with `lg:-mt-20`) + the nav.
+- **Mobile:** no top bar. An icon dock fixed `bottom-4`: Home, Films, Services, Prints, Contact + "More"
+  (About, Blog, call, WhatsApp). The footer has `pb-28` below `lg` so the dock never covers it.
+- No motion library and no blur (the portfolio's pill uses both; this keeps its look in plain CSS).
+- **Breadcrumbs** (`shared/components/navigation/breadcrumbs.tsx`): mono, uppercase, tracked, gold on
+  hover; last crumb truncated. Detail pages lead with one; index pages don't. Build one `Crumb[]` and pass
+  it to both `<Breadcrumbs>` and `breadcrumbJsonLd()`.
+
+## 4. Page layout rules
+
+- One `<h1>` per page. Detail pages: breadcrumbs → header (icon, H1, Nepali name, summary) → main column
+  1.6fr + `InquiryCard` sidebar 1fr (`lg:sticky`); on mobile the inquiry card comes first.
+- **Home is a short film in numbered scenes** (owner, 2026-09-27: "be creative, like the splash"). After the
+  splash and hero, each section is a scene with its own photographic device. Everything is **centred**, like
+  the hero (`SceneHeading`: a centred title card, "—— Scene 02 ——" in mono between gold rules, serif title,
+  lede; numbering follows page order, computed in the view). A scene's "View all …" link (`SceneLink`:
+  underlined gold text + →; `besideArrows` drops the → on desktop, where the carousel's scroll arrows sit
+  beside it) sits centred at its bottom; carousels put it between their arrows (`Carousel center`): desktop `(←) View all 15 films (→)`, phones the
+  dots with the link under them. Between the scroll arrows the link has **no arrow of its own** (arrows there
+  only ever mean "scroll"; an external link may use ↗); standing alone, links keep their →. Carousels rewind to the start whenever they leave the screen, so a scene
+  always opens fresh with the last item cut at the edge:
+  01 `#films` **Now showing**: `FilmStrip`, the films as a 35mm strip (sprocket holes, edge print
+  `SUNRISE 400 ▸ 01A`, "end of roll" frame → /films) in the shared `Carousel` (swipe; arrows lg+, dots below
+  lg, like the portfolio) · 02 `#services` **The shot list**: `ShotList`, 4 featured services as numbered
+  rows; the service's `coverFilmId` still develops on hover (desktop), shows small on phones it becomes a
+  storyboard (panels: full-width still, gold viewfinder corners, "SHOT 01" stamp, title, note); a final
+  numbered "And many more" row lists the rest (`shortName`s), then "View all 7 services" centred below · 03 `#prints` **From the darkroom**: `DarkroomWall`, the 3 featured prints as CSS objects
+  (open album, matted frame, canvas with wrapped edge, a fanned stack of prints, a closed photo book) for
+  all five prints, holding each print's `previewFilmIds` stills, museum labels, scrolling sideways in a
+  `Carousel` (`(←) View all prints and albums (→)`) · 04 `#reviews` **Kind words**: `ReviewCard`s (notched corner with a gold lens-ring monogram of the
+  client's initials; no avatars) in a `Carousel`; **only rendered when real reviews exist**
+  (`features/reviews/data/reviews.seed.ts`; dev shows labelled SAMPLE cards, production never) · 05
+  `#about` **Behind the lens**: `BehindTheLens`, the founder's portrait in the splash's viewfinder (AF
+  brackets, readouts), name, role, their own words; until `features/site/data/founder.ts` is filled it shows
+  the studio (logo + true facts) · 06 `#contact` **Book a date**: `Slate`, a clapperboard (gold/black striped
+  sticks; the top one rests closed and plays one quick open-and-clap, 7°, every time the slate scrolls into view;
+  never left open over the page, `Clapper`) with PRODUCTION / BEHIND THE CAMERA /
+  DATE / SCENE / TAKE fields, then WhatsApp, call, email, address, socials.
+  Featured items only; everything else lives on the detail pages. Keep new home content inside this scene
+  concept rather than adding generic sections.
+- **Hero** = the whole first screen (`min-h-[100svh]`), kept light like the portfolio's: centred
+  `.hero-mark`, eyebrow (studio · place), H1 "Photos and films for the days you'll want to relive", the
+  Nepali line, WhatsApp + films buttons, plain social icons (Facebook, YouTube, WhatsApp), and a desktop
+  "Scroll ↓" cue whose arrow bobs down and back (1.8s loop, owner's request; the only looping animation,
+  off with reduced motion). No lede paragraph (owner: too heavy). H1 34/44/52px, `text-balance`. Spacing
+  is grouped and was measured on screen (visible gaps, not CSS margins): sun + name 14 · name → H1 28 ·
+  H1 → Nepali 20 · message → buttons 40 · buttons → icons 24; block centred under the nav. Social icons:
+  Facebook, YouTube, WhatsApp (owner wants WhatsApp here too).
+- **Tried and rejected (2026-09-27):** a full-bleed photo hero with only "Made to be remembered." and a
+  quiet icon-less nav. The owner preferred this version; don't reintroduce it unasked.
+- **Nothing may widen the page** (`html { overflow-x: clip }` guards it): on phones a few px of overflow makes
+  the browser zoom out, then everything jumps when it snaps back. Things drawn outside a box (the secondary
+  button's AF brackets sit 5px outside) must never touch the screen edge. Hero buttons on phones are natural
+  width, centred; "Watch our films" is compact (`sprite-btn-compact`: 8px × 16px below sm).
+- Mobile: no horizontal overflow at 360px (`min-w-0` on grid children holding scrollers), 44px touch
+  targets for buttons, standalone links ≥ 24px tall.
+
+## 5. Language (English + Nepali)
+
+UI copy is English; Nepali is a secondary line, **always inside `lang="ne"`** (MDX: `<Ne>…</Ne>`).
+Terms: विवाह = wedding · पास्नी = pasni (rice feeding) · ब्रतबन्ध = bratabandha · चौरासी पूजा = chaurasi puja ·
+पञ्चे बाजा = panchebaja · स्याङ्जा = Syangja · अर्जुनचौपारी = Arjunchaupari.
+
+## 6. Films (YouTube)
+
+```
+python3 scripts/fetch-youtube.py      # RSS feed (latest 15) merged into generated/videos.json + thumbnails
+python3 scripts/optimize-images.py    # web sizes + blur + share images
+```
+
+- The feed only lists the newest 15, so the script **merges**; older videos are added by id in
+  `data/films/channel.json` `extraVideoIds`.
+- `data/films/curation.json` (hand-edited): site title, `category` (weddings | ceremonies | culture), `place`,
+  `featured` (home first), `hidden`. Keep couples' names as the studio spelled them. Uncurated uploads get
+  a tidied YouTube title and a guessed category: curate them.
+- Film slugs come from the curated title: **once live, don't rename a film without a redirect.**
+- `cmmLJ-wB324` ("RAPAKOT TIRSUL", rotated thumbnail) is hidden pending the owner.
+- Facebook has no public feed; posting there stays manual until the Supabase dashboard exists.
+
+## 7. Content rules (services, prints, blog)
+
+- **No invented facts about the studio:** no prices, turnaround times, counts ("500 weddings"), years in
+  business, awards, ratings or testimonials unless the owner provides them. When unknown, say "ask us".
+- Prices are never listed; every offering has a pre-filled WhatsApp `inquiry`.
+- **Reviews are real or absent**: copied word for word from Facebook/Google (or given with permission), named as
+  the client agreed, linked to the source. Never written by us, never AI avatars (initials only).
+- **The founder** (name, portrait, quote, bio) comes from the owner only; until then the studio stands in.
+- Service/print copy is a first draft from the old site and the studio's films: the owner should confirm it.
+- **Photos:** the studio's own work only (film stills, and its photos once supplied), credited under blog
+  covers ("Sunrise Photo Studio, from the film …" + link). Never stock, never AI-generated. People in
+  photos are the studio's clients: remove on request (the privacy page promises this).
+- Blog frontmatter: `title, summary, publishedAt, tags, cover, coverAlt, coverCredit, coverCreditUrl,
+  featured?, updatedAt?, draft?` (+ `coverLicense*` for non-studio photos). `##`/`###` headings build
+  "On this page". Cultural facts (rituals, instruments) are phrased as "usually / in many families".
+
+## 8. SEO (every route)
+
+- `buildPageMetadata` / `buildArticleMetadata` → unique title + description, canonical, OG, Twitter.
+- JSON-LD via `<JsonLd>`: home = `WebSite` + `LocalBusiness` (`@id` `/#studio`); contact = `LocalBusiness`;
+  services/prints = `Service` (provider → `/#studio`) + `BreadcrumbList`; indexes = `ItemList`; film =
+  `VideoObject`; post = `BlogPosting`. No ratings, reviews, prices or hours unless real.
+- `app/sitemap.ts` lists every canonical URL. `?category=` and `?tag=` views are `noindex, follow`.
+
+## 9. Performance
+
+- Server components by default. Client components only: `FloatingNav`, `YouTubePlayer` (click-to-play
+  facade, youtube-nocookie), `BookingForm`, `SplashScreen` (session/skip only), `error.tsx`. No animation/carousel/lightbox libraries.
+- Images are **pre-built, never resized on request**: originals in `assets/images/{blog,films}/` →
+  `scripts/optimize-images.py` → `public/images/<collection>/<name>-{480,800,1280}.webp` + `og/<name>.jpg`
+  + `features/*/data/generated/images.json`. `next/image` uses `lib/image-loader.ts`. Always pass `sizes`,
+  width/height and `placeholder="blur"`; `priority` only on the LCP image. `/images/*` and `/brand/*` are
+  cached for a year: **never overwrite an image with a different picture; use a new name.**
+- Brand: `assets/brand/sunrise-logo.png` (2000px original) → `public/brand/logo-{80,160}.png`,
+  `logo-512.jpg`, `og-default.jpg`, and `app/icon.png`, `apple-icon.png`, `favicon.ico`.
+- Analytics: none yet. `SiteAnalytics` renders Microsoft Clarity only when `siteConfig.clarityId` is set
+  and `VERCEL_ENV === "production"`; update `/privacy` if that changes.
+
+## 10. Workflow and verification
+
+- After changes: `npm run typecheck`, `npm run lint`, and for route/data changes `npm run build`.
+- Look at the result at 1440px and 390px/360px (headless Chrome via the DevTools protocol for widths below
+  ~500px), checking for horizontal overflow and small tap targets, and the mobile dock with a
+  viewport-sized shot.
+  For full-page shots use `captureBeyondViewport` with a clip; don't resize the viewport to the page height
+  (the home hero is `100svh` and would stretch). Wait ~4s on / so the splash has finished.
+- Keep this file current when a convention changes.

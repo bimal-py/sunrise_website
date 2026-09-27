@@ -1,0 +1,467 @@
+@import "tailwindcss";
+
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   The whole palette, taken from the logo: black and gold. Neutral near-black
+   page, charcoal cards, one gold for actions and small accents. Components use
+   these tokens (via the Tailwind aliases below), never raw hex. See CLAUDE.md §3
+   before adding anything here. */
+:root {
+  --background: #0b0b0c;          /* page: the logo's black, neutral (no blue, no brown) */
+  --surface: #141415;             /* cards, panels, footer */
+  --surface-raised: #1c1c1e;      /* inputs, nested fills, hover rows */
+  --surface-nav: #111112;         /* floating nav pill and mobile dock */
+  --surface-nav-active: #25211a;  /* active nav item: black with a trace of gold */
+
+  --foreground-strong: #f4f2ee;   /* headings, important type (18:1 on page) */
+  --foreground: #d8d5cf;          /* main text (13:1) */
+  --muted: #a09c94;               /* secondary text, metadata (7:1) */
+  --border: #262628;              /* all borders/dividers */
+  --border-strong: #3a3a3d;       /* nav, inputs, hovered neutral cards */
+
+  --primary: #e0b24c;             /* logo gold: primary buttons, links, active, focus (10:1 on page) */
+  --primary-strong: #f0c96b;      /* hover/pressed: a lighter gold on dark */
+  --primary-soft: #221d12;        /* selected chips, badges */
+  --on-primary: #0b0b0c;          /* text on gold fills */
+
+  --success: #7cc49a;
+  --error: #eb8a8a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-nav: var(--surface-nav);
+  --color-nav-active: var(--surface-nav-active);
+  --color-strong: var(--foreground-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-success: var(--success);
+  --color-error: var(--error);
+
+  /* Radius scale: controls 6 · cards 8 · large containers 10 · chips/nav pill full. */
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --radius-panel: 10px;
+
+  --font-sans: var(--font-inter), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  /* Display serif for h1/h2 only, echoing the logo's "PHOTO STUDIO" lettering. */
+  --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+}
+
+/* Element defaults live in the base layer so Tailwind utilities always win
+   (unlayered element rules beat utilities in Tailwind v4). */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    /* Nothing may widen the page: on phones a few px of overflow makes the browser zoom
+       out to fit, and everything jumps when it snaps back (e.g. when the splash locks scroll). */
+    overflow-x: clip;
+    scroll-behavior: smooth;
+    color-scheme: dark;
+    /* Keeps the layout still when the splash locks scrolling (no scrollbar jump). */
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100%;
+    overflow-x: clip;
+    color: var(--foreground);
+    background-color: var(--background);
+    font-family: var(--font-inter), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    color: var(--foreground-strong);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  /* Page and section titles in the display serif. Cormorant runs small, so
+     these sizes are a step larger than an Inter heading would be. */
+  h1, h2 {
+    font-family: var(--font-cormorant), Georgia, serif;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.005em;
+  }
+
+  /* Nepali renders in the Devanagari face wherever it appears. Devanagari
+     needs a little more line height than Latin to sit balanced beside it. */
+  :lang(ne) {
+    font-family: var(--font-devanagari), var(--font-inter), sans-serif;
+    letter-spacing: 0;
+    line-height: 1.7;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  img, svg, iframe {
+    display: block;
+    max-width: 100%;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+}
+
+/* ── Buttons: gold ink sprite (shared/components/ui/sprite-button.tsx) ──
+   Primary, from the owner's portfolio: a brush-stroke sprite
+   (/brand/ink-sprite.webp, 23 frames: fully painted → empty) masks the gold
+   fill layer; JS moves the mask frame by frame (--ink) on hover/focus.
+   Secondary: autofocus corner brackets, CSS only. In the components layer so
+   layout utilities (w-full, margins, rounded-full) still win. */
+@layer components {
+  .sprite-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.75rem; /* 44px touch target */
+    overflow: hidden;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+  }
+  /* Compact on phones (8px × 16px), e.g. the hero's secondary action. */
+  @media (max-width: 639px) {
+    .sprite-btn.sprite-btn-compact { height: auto; }
+    .sprite-btn-compact .sprite-btn-label { padding: 0.5rem 1rem; }
+  }
+  /* Secondary: gold outline; on hover/focus the outline softens, the text turns
+     gold and four corner brackets snap on with a little overshoot, like the
+     splash's autofocus locking onto the sun. */
+  .sprite-btn-secondary {
+    overflow: visible; /* the brackets sit just outside the corners */
+    border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+    transition: border-color 0.2s ease;
+  }
+  .sprite-btn-secondary .sprite-btn-label { transition: color 0.2s ease; }
+  .sprite-btn-secondary:hover,
+  .sprite-btn-secondary:focus-visible { border-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+  .sprite-btn-secondary:hover .sprite-btn-label,
+  .sprite-btn-secondary:focus-visible .sprite-btn-label { color: var(--primary); }
+  /* The brackets are the focus indicator here; no second outline on top of them. */
+  .sprite-btn-secondary:focus-visible { outline: none; }
+
+  .sprite-btn-af {
+    position: absolute;
+    inset: -5px;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(1.12);
+    transition:
+      opacity 0.15s ease,
+      transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .sprite-btn-secondary:hover .sprite-btn-af,
+  .sprite-btn-secondary:focus-visible .sprite-btn-af {
+    opacity: 1;
+    transform: none;
+  }
+  .sprite-btn-af i {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 0 solid var(--primary);
+  }
+  .sprite-btn-af i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; border-top-left-radius: 3px; }
+  .sprite-btn-af i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; border-top-right-radius: 3px; }
+  .sprite-btn-af i:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; border-bottom-left-radius: 3px; }
+  .sprite-btn-af i:nth-child(4) { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; border-bottom-right-radius: 3px; }
+
+  .sprite-btn-label,
+  .sprite-btn-fill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 100%;
+    padding: 0 1.25rem;
+  }
+  /* The layer you see where the ink isn't. */
+  .sprite-btn-label { position: relative; z-index: 1; }
+  .sprite-btn-primary .sprite-btn-label { color: var(--primary); }
+  .sprite-btn-secondary .sprite-btn-label { color: var(--foreground-strong); }
+
+  /* The gold ink (primary only), painted at rest, including on first paint before JS. */
+  .sprite-btn-fill {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: var(--primary);
+    color: var(--on-primary);
+    -webkit-mask-image: url("/brand/ink-sprite.webp");
+    mask-image: url("/brand/ink-sprite.webp");
+    -webkit-mask-size: 2300% 100%;
+    mask-size: 2300% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: var(--ink, 0%) 0;
+    mask-position: var(--ink, 0%) 0;
+  }
+}
+
+/* ── Long-form article typography (blog posts, detail pages) ── */
+.prose-article {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--foreground);
+  overflow-wrap: anywhere; /* long emails/URLs wrap instead of widening the page on phones */
+}
+.prose-article > * + *,
+.prose-article section > * + * { margin-top: 1em; }
+.prose-article section > h2:first-child { margin-top: 1.8em; }
+.prose-article h2 {
+  margin-top: 1.8em;
+  font-size: 2rem;
+  scroll-margin-top: 7rem;
+}
+.prose-article h3 {
+  margin-top: 1.6em;
+  font-size: 1.2rem;
+  font-weight: 600;
+  scroll-margin-top: 7rem;
+}
+.prose-article a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.prose-article a:hover { color: var(--primary-strong); }
+.prose-article ul,
+.prose-article ol { padding-left: 1.4em; }
+.prose-article ul { list-style: disc; }
+.prose-article ol { list-style: decimal; }
+.prose-article li + li { margin-top: 0.4em; }
+.prose-article li::marker { color: var(--primary); }
+.prose-article strong { color: var(--foreground-strong); font-weight: 600; }
+.prose-article blockquote {
+  border-left: 2px solid var(--primary);
+  padding: 0.25em 0 0.25em 1.1em;
+  color: var(--foreground-strong);
+}
+.prose-article table {
+  display: block;               /* wide tables scroll sideways on phones */
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.prose-article th,
+.prose-article td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6em 1.2em 0.6em 0;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.prose-article td:last-child { white-space: normal; }
+.prose-article th { color: var(--foreground-strong); font-weight: 600; }
+.prose-article hr { border: 0; border-top: 1px solid var(--border); margin: 2.4em 0; }
+
+/* ── Splash (home page, every full load; features/home/presentation/components/splash-screen.tsx) ──
+   The one deliberate animation on the site (CLAUDE.md §3): a look through a
+   camera at a sunrise. Steps 1–2 are pure CSS on server-rendered markup, so
+   they start on first paint, before any JavaScript:
+     viewfinder grid 0–0.7s · corners + readouts 0.2–0.6s · horizon 0.15s ·
+     sun rises 0.35–1.35s · rays 0.9–1.4s · autofocus hunts 0.3–1.5s, locks gold ·
+     name 1.3–1.9s · counter 0–2.2s
+   Step 3 is driven by the component (classes below): shutter at 2.35s
+   (closed at +0.13s, when the viewfinder is removed), then the sun glides
+   onto the hero mark for 0.85s. Without JS: fade out at 2.5s. */
+@property --splash-n {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+@keyframes splash-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes splash-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes splash-grow-x { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes splash-grow-y { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes splash-frame-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+@keyframes splash-rise { from { transform: translateY(58px); } to { transform: none; } }
+@keyframes splash-count { to { --splash-n: 100; } }
+@keyframes splash-out { to { opacity: 0; visibility: hidden; } }
+/* Autofocus: comes in wide, overshoots, settles, then locks gold. */
+@keyframes splash-af {
+  0% { opacity: 0; transform: scale(1.5); }
+  25% { opacity: 1; transform: scale(0.88); }
+  45% { transform: scale(1.08); }
+  62% { transform: scale(0.97); }
+  75%, 100% { opacity: 1; transform: none; }
+}
+@keyframes splash-af-lock { to { color: var(--primary); } }
+/* Shutter: two curtains snap shut and reopen. */
+@keyframes splash-shutter {
+  0% { transform: scaleY(0); }
+  40%, 55% { transform: scaleY(1); }
+  100% { transform: scaleY(0); }
+}
+
+.splash {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --glide: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Fallback ending without JavaScript: fade out at 2.5s. */
+  animation: splash-out 0.4s ease-in 2.5s forwards;
+  cursor: default;
+}
+.splash-grid-h { transform-origin: left; animation: splash-grow-x 0.7s var(--ease) var(--d, 0ms) both; }
+.splash-grid-v { transform-origin: top; animation: splash-grow-y 0.7s var(--ease) var(--d, 0ms) both; }
+.splash-frame { animation: splash-frame-in 0.6s var(--ease) 0.2s both; }
+.splash-draw {
+  stroke-dasharray: 1;
+  animation: splash-draw 0.8s var(--ease) var(--d, 0ms) both;
+}
+.splash-rise { animation: splash-rise 1s var(--ease) 0.35s both; }
+.splash-fade { animation: splash-fade 0.6s var(--ease) var(--d, 0ms) both; }
+.splash-af {
+  animation:
+    splash-af 1.2s var(--ease) 0.3s both,
+    splash-af-lock 0.15s linear 1.5s forwards;
+}
+.splash-count::after {
+  counter-reset: splash var(--splash-n);
+  content: counter(splash, decimal-leading-zero);
+  animation: splash-count 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.splash-curtain { transform: scaleY(0); }
+.splash-curtain-top { transform-origin: top; }
+.splash-curtain-bottom { transform-origin: bottom; }
+
+/* With JavaScript the component ends it (shutter + glide, or a fade). */
+.splash.splash-js { animation: none; }
+.splash-shutter .splash-curtain { animation: splash-shutter 0.32s cubic-bezier(0.7, 0, 0.3, 1) both; }
+.splash-captured .splash-viewfinder { visibility: hidden; }
+.splash-fading {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--splash-out, 250ms) ease-in;
+}
+.splash-mark {
+  transform-origin: center;
+  transition: transform 0.85s var(--glide);
+  will-change: transform;
+}
+.splash-mark .sunrise-strokes { transition: stroke-width 0.85s var(--glide); }
+.splash-backdrop { transition: opacity 0.6s ease; }
+.splash-handover { pointer-events: none; }
+.splash-handover .splash-backdrop { opacity: 0; }
+/* The hero's small mark waits until the big one lands on it; the rest of the
+   hero fades in as the sun settles (splash-revealing), so the gliding sun never
+   crosses the headline. */
+.splash-active .hero-mark { visibility: hidden; }
+.hero-reveal { transition: opacity 0.6s ease; }
+.splash-active:not(.splash-revealing) .hero-reveal { opacity: 0; }
+.splash-active { overflow: hidden; }
+
+/* ── Hero "Scroll ↓" cue: the arrow bobs down and back (owner's request). ── */
+@keyframes scroll-cue {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+.scroll-cue-arrow { animation: scroll-cue 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue-arrow { animation: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* ── Carousel (shared/components/ui/carousel.tsx) ──
+   Full-bleed track whose first item lines up with <Container> (max-w-7xl,
+   px-4 / sm:px-6 / lg:px-8): the side padding and scroll-padding are the
+   container's gutter plus whatever the viewport has beyond 80rem. */
+.carousel-track {
+  --edge: max(1rem, calc((100vw - 80rem) / 2 + 1rem));
+  padding-inline: var(--edge);
+  scroll-padding-inline: var(--edge);
+}
+@media (min-width: 640px) {
+  .carousel-track { --edge: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)); }
+}
+@media (min-width: 1024px) {
+  .carousel-track { --edge: max(2rem, calc((100vw - 80rem) / 2 + 2rem)); }
+}
+
+/* ── Film strip (features/home/presentation/components/film-strip.tsx) ──
+   35mm stock: a dark film base with a row of sprocket holes above and below
+   each frame. Frames sit edge to edge, so the holes run on as one strip. The
+   holes are an SVG pattern (rounded rectangles in the page colour). */
+.film-frame {
+  background-color: #171718;
+  border-inline: 1px solid #0b0b0c; /* the thin line between frames */
+}
+.film-perforations {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='28'%3E%3Crect x='7' y='8' width='10' height='12' rx='2.5' fill='%230b0b0c'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: 0 center;
+}
+
+/* ── Review card notch (features/reviews/presentation/components/review-card.tsx) ──
+   A circle scooped out of the card's top-right corner (a mask, not a visual
+   gradient); the lens monogram sits in it with a thin gap all round. */
+.review-card-body {
+  -webkit-mask-image: radial-gradient(circle at calc(100% - 34px) 34px, transparent 42px, #000 42.5px);
+  mask-image: radial-gradient(circle at calc(100% - 34px) 34px, transparent 42px, #000 42.5px);
+}
+
+/* ── Slate / clapperboard (features/home/presentation/components/slate.tsx) ──
+   Diagonal gold-and-black stripes (an SVG tile, not a gradient). The top stick
+   hinges at its bottom-left corner and rests closed; each time the slate
+   scrolls into view it plays one open-and-clap (clapper.tsx). */
+.slate-stripes {
+  background-color: #1c1c1e; /* the sticks' dark body, lighter than the page so the open stick reads */
+  outline: 1px solid var(--border-strong);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='48'%3E%3Cpolygon points='0,48 24,0 48,0 24,48' fill='%23e0b24c'/%3E%3C/svg%3E");
+  background-size: 64px 100%;
+  background-repeat: repeat-x;
+}
+.slate-stripes-offset { background-position: 32px 0; }
+.slate-clapper { transform-origin: 0% 100%; }
+/* One clap: lift (7°, low enough never to reach the heading), a beat, then snap shut. */
+@keyframes slate-clap {
+  0% { transform: none; animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  35% { transform: rotate(-7deg); }
+  60% { transform: rotate(-7deg); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.5); }
+  100% { transform: none; }
+}
+.slate-clapper.is-clapping { animation: slate-clap 0.75s both; }

@@ -1,0 +1,19 @@
+{
+  "_help": "Hand-edited. Keyed by YouTube video id. title = how the site names the film (the YouTube title is kept in videos.json); category = weddings | ceremonies | culture; place = where it was filmed, when known; featured = shown first on the home page; hidden = kept off the site. A video with no entry here uses its YouTube title and the 'weddings' category if the title says 'weds', else 'ceremonies'.",
+  "2thTrQR3pec": { "title": "Basanta weds Bindu", "category": "weddings", "featured": true },
+  "TXM4IabFgUk": { "title": "Sagar weds Asmita", "category": "weddings" },
+  "YVc6GEgr9uQ": { "title": "Amrit weds Sabu", "category": "weddings" },
+  "D8QMlYCuBeA": { "title": "Krishna weds Melina", "category": "weddings" },
+  "BwOaEbbiVTc": { "title": "Kedar weds Sushma", "category": "weddings" },
+  "Rk2D0cbQK34": { "title": "Sushil weds Indu: wedding highlights", "category": "weddings", "featured": true },
+  "cmmLJ-wB324": { "title": "Rapakot Tirsul", "category": "culture", "hidden": true },
+  "nqMUJ7J7qTg": { "title": "Wedding day moments", "category": "weddings" },
+  "3mqD0s53Lvg": { "title": "Deepak weds Laxmi", "category": "weddings" },
+  "66Cd8aeqWLQ": { "title": "Bratabandha of Suman Khanal, Tirasi", "category": "ceremonies", "place": "Tirasi", "featured": true },
+  "GTBeZRAIcWQ": { "title": "Chaurasi puja of Basundhari Rimal, Panchamul", "category": "ceremonies", "place": "Panchamul" },
+  "qBsCfAvn6bI": { "title": "Asim weds Srijna, Panchamul", "category": "weddings", "place": "Panchamul" },
+  "tlucLNe7aQI": { "title": "Pasni (rice feeding ceremony), Walling", "category": "ceremonies", "place": "Walling", "featured": true },
+  "QZtJ6EMi_vk": { "title": "Bishal weds Bimala", "category": "weddings" },
+  "2Pn9Ibh7qiI": { "title": "Keshav weds Anita: full wedding film", "category": "weddings" },
+  "xZHzDT7CFSs": { "title": "Panchebaja in Arjunchaupari, singer Bijaya Bishwokarma", "category": "culture", "place": "Arjunchaupari" }
+}
