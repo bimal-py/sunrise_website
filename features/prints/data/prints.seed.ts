@@ -187,7 +187,7 @@ export const prints: Print[] = [
   },
   {
     slug: "photo-books",
-    previewFilmIds: ["GTBeZRAIcWQ"],
+    previewFilmIds: ["QZtJ6EMi_vk"],
     featured: false,
     name: "Photo books",
     nameNe: "फोटो बुक",

@@ -426,7 +426,7 @@
    35mm stock: a dark film base with a row of sprocket holes above and below
    each frame. Frames sit edge to edge, so the holes run on as one strip. The
    holes are an SVG pattern (rounded rectangles in the page colour). */
-.film-frame {
+.film-piece {
   background-color: #171718;
   border-inline: 1px solid #0b0b0c; /* the thin line between frames */
 }
@@ -434,6 +434,128 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='28'%3E%3Crect x='7' y='8' width='10' height='12' rx='2.5' fill='%230b0b0c'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-position: 0 center;
+}
+/* Pointing at a frame tears it out of the strip (owner's request, 2026-09-29).
+   The film splits either side of it: the frames before slide left, the ones
+   after slide right, the edges that faced it rip jagged, and it comes a little
+   closer. A tear's two edges match: every right edge uses one set of tooth
+   depths and every left edge the rest of 9px, so the gaps run an even width.
+   --tear-left / --tear-right (0 straight → 1 torn) are registered numbers so
+   the clip-path animates. The stills rest a little dim and the torn-out one
+   lights up. Mouse (and keyboard) only: a touch screen can't point, so there
+   the strip stays whole and bright. The track gets room above and below so the
+   bigger frame isn't clipped by the scroller. */
+@property --tear-left { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --tear-right { syntax: "<number>"; inherits: false; initial-value: 0; }
+@media (hover: hover) {
+  .film-strip > .carousel-track { padding-block: 1rem; margin-block: -1rem; }
+  .film-piece {
+    clip-path: polygon(
+      calc(var(--tear-left) * 6px) 0,
+      calc(100% - var(--tear-right) * 3px) 0,
+      calc(100% - var(--tear-right) * 1px) 6%,
+      calc(100% - var(--tear-right) * 7px) 11%,
+      calc(100% - var(--tear-right) * 3px) 17%,
+      calc(100% - var(--tear-right) * 9px) 24%,
+      calc(100% - var(--tear-right) * 2px) 30%,
+      calc(100% - var(--tear-right) * 6px) 37%,
+      calc(100% - var(--tear-right) * 1px) 44%,
+      calc(100% - var(--tear-right) * 8px) 51%,
+      calc(100% - var(--tear-right) * 3px) 57%,
+      calc(100% - var(--tear-right) * 7px) 64%,
+      calc(100% - var(--tear-right) * 2px) 71%,
+      calc(100% - var(--tear-right) * 9px) 78%,
+      calc(100% - var(--tear-right) * 4px) 85%,
+      calc(100% - var(--tear-right) * 7px) 92%,
+      calc(100% - var(--tear-right) * 2px) 100%,
+      calc(var(--tear-left) * 7px) 100%,
+      calc(var(--tear-left) * 2px) 92%,
+      calc(var(--tear-left) * 5px) 85%,
+      0 78%,
+      calc(var(--tear-left) * 7px) 71%,
+      calc(var(--tear-left) * 2px) 64%,
+      calc(var(--tear-left) * 6px) 57%,
+      calc(var(--tear-left) * 1px) 51%,
+      calc(var(--tear-left) * 8px) 44%,
+      calc(var(--tear-left) * 3px) 37%,
+      calc(var(--tear-left) * 7px) 30%,
+      0 24%,
+      calc(var(--tear-left) * 6px) 17%,
+      calc(var(--tear-left) * 2px) 11%,
+      calc(var(--tear-left) * 8px) 6%
+    );
+    transition-property: transform, --tear-left, --tear-right;
+    transition-duration: 0.35s;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  /* The frame pointed at (or holding keyboard focus). */
+  .film-frame:is(:hover, :has(:focus-visible)) { z-index: 1; }
+  .film-frame:is(:hover, :has(:focus-visible)) .film-piece { --tear-left: 1; --tear-right: 1; transform: scale(1.04); }
+  /* Its neighbours tear on the facing edge; everything either side moves apart. */
+  .film-frame:hover + .film-frame .film-piece,
+  .film-frame:has(:focus-visible) + .film-frame .film-piece { --tear-left: 1; }
+  .film-frame:has(+ .film-frame:hover) .film-piece,
+  .film-frame:has(+ .film-frame :focus-visible) .film-piece { --tear-right: 1; }
+  .film-frame:hover ~ .film-frame .film-piece,
+  .film-frame:has(:focus-visible) ~ .film-frame .film-piece { transform: translateX(14px); }
+  .film-frame:has(~ .film-frame:hover) .film-piece,
+  .film-frame:has(~ .film-frame :focus-visible) .film-piece { transform: translateX(-14px); }
+
+  .film-still { filter: brightness(0.7); transition: filter 0.3s ease; }
+  .film-frame:is(:hover, :has(:focus-visible)) .film-still { filter: none; }
+}
+
+/* ── Darkroom line (features/home/presentation/components/darkroom-wall.tsx) ──
+   The prints hang from a drying line (owner's requests, 2026-09-29). The
+   rope's shape is worked out in drying-line.ts and drawn by each piece as
+   short SVG lines (round caps, so they join); --line-gap is the space between
+   pieces, which the runs across the gaps span. --line-scale shrinks every
+   height on the line below sm, where the pieces are narrower, so they tilt no
+   more than on a laptop. The rope is a round cord built in layers: dark
+   underside, twine, highlight, then the strands (#darkroom-twist). A clip is a
+   small black binder clip that wraps the rope: its back handle in a layer
+   behind the rope, its front handle over the top and down in front, both
+   hooked into the body's rolled lip; the body grips the piece's top edge
+   (rope 6px below the clip's top, the edge 23.5px down, so pieces hang 17.5px
+   below the rope). With a mouse the pieces (and their clips) rest a little dim
+   (88%), like prints under a safelight, and the one you point at lights up;
+   the labels stay at full strength. */
+.darkroom-line { --line-gap: 2.5rem; --line-scale: 0.55; }
+@media (min-width: 640px) {
+  .darkroom-line { --line-scale: 1; }
+}
+@media (min-width: 1024px) {
+  .darkroom-line { --line-gap: 3.5rem; }
+}
+.darkroom-rope line { stroke-linecap: round; }
+.darkroom-rope .rope-scale { transform: scale(1, var(--line-scale)); }
+.darkroom-rope .rope-under { stroke: #4a3a22; stroke-width: 5px; }
+.darkroom-rope .rope-twine { stroke: #a18a5f; stroke-width: 3.6px; }
+.darkroom-rope .rope-shine { stroke: #dcc9a0; stroke-opacity: 0.85; stroke-width: 1.2px; }
+.darkroom-rope .rope-twist { stroke: url(#darkroom-twist); stroke-width: 5px; }
+.darkroom-clip {
+  position: absolute;
+  top: -23.5px;
+  width: 22px;
+  height: 32px;
+  translate: -50% 0;
+  overflow: visible;
+}
+.darkroom-clip :is(.clip-handle, .clip-handle-back) {
+  fill: none;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.darkroom-clip .clip-handle { stroke: #a7a9ad; } /* steel wire */
+.darkroom-clip .clip-handle-back { stroke: #6f7176; }
+.darkroom-clip .clip-body { fill: #161617; stroke: #3d3d40; stroke-width: 0.8; }
+.darkroom-clip .clip-lip { fill: #2e2e31; stroke: #1c1c1e; stroke-width: 0.5; }
+.darkroom-clip .clip-shine { stroke: #7a7a80; stroke-width: 0.7; }
+.darkroom-clip .clip-contact { stroke: #000; stroke-opacity: 0.35; stroke-width: 1; }
+@media (hover: hover) {
+  .darkroom-dim { filter: brightness(0.88); transition: filter 0.3s ease; }
+  .darkroom-item:is(:hover, :has(:focus-visible)) .darkroom-dim { filter: none; }
 }
 
 /* ── Review card notch (features/reviews/presentation/components/review-card.tsx) ──

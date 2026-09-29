@@ -96,6 +96,9 @@ Black and gold, from the logo. Dark neutral page; one gold.
   http) and `type="submit"`. No other button styles; text links use `ViewAllLink` or plain gold links.
 - **Shadows:** none on cards (borders do the work). The only shadow: the floating nav pill, dock and More menu.
 - **Hover:** 150ms colour/border change. No lifts, scales, glows, parallax or entrance animations.
+  Exceptions are home-scene devices the owner asked for (listed with their scene in §4): the film strip's
+  tear and the darkroom's dim-until-pointed. Both are mouse/keyboard only (`@media (hover: hover)`), so
+  phones see the scene whole and at full brightness.
 - **The one exception: the home splash** (owner's request, 2026-09-27; loader idea from aakashacharya.com.np).
   A look through the studio's camera at a sunrise: viewfinder (frame corners, rule-of-thirds grid, mono
   readouts `AF-S · f/2.8 · 1/250 · ISO 100` / `RAW`), the `SunriseMark` draws (horizon, sun rises, rays) while
@@ -113,6 +116,11 @@ Black and gold, from the logo. Dark neutral page; one gold.
   `strokeWidth` differ).
   **No video and no AI footage** for it: a clip has to download before it can play (slow on Nepali mobile
   data, blocked by iOS low-power autoplay) and AI video breaks the real-work-only rule.
+- **Detail (owner, 2026-09-29): get the small physical details right.** Anything drawn as a real object
+  (film strip, darkroom line, clapperboard, splash camera) must hold up close: what passes in front of what
+  (a clip wraps its rope: front handle over and in front, back handle behind), weight and gravity (a loaded
+  rope sags and dips at each clip; a piece tilts only as the rope slopes), real proportions and materials,
+  and light. "Looks roughly like it" reads as artificial. Check 2x close-up crops before showing anything.
 - **Banned:** gradients, gradient text, glass/blur, glows, dotted grids, blobs, abstract shapes, stock or
   AI images, decorative illustrations, repeated logo art, big decorative icons.
 - **Type:** h1/h2 Cormorant 600 (it runs small: H1 40–60px, H2 30–40px); h3 and UI Inter. Eyebrow
@@ -151,13 +159,26 @@ Black and gold, from the logo. Dark neutral page; one gold.
   always opens fresh with the last item cut at the edge:
   01 `#films` **Now showing**: `FilmStrip`, the films as a 35mm strip (sprocket holes, edge print
   `SUNRISE 400 ▸ 01A`, "end of roll" frame → /films) in the shared `Carousel` (swipe; arrows lg+, dots below
-  lg, like the portfolio) · 02 `#services` **The shot list**: `ShotList`, 4 featured services as numbered
+  lg, like the portfolio); with a mouse the stills rest dim and the frame pointed at **tears out** (owner,
+  2026-09-29): the strip splits either side with matching jagged edges and the frame comes 4% closer. The
+  `<article>` is the fixed hover slot and the inner `.film-piece` moves, so the pointer never falls into a
+  torn gap and flickers · 02 `#services` **The shot list**: `ShotList`, 4 featured services as numbered
   rows; the service's `coverFilmId` still develops on hover (desktop), shows small on phones it becomes a
   storyboard (panels: full-width still, gold viewfinder corners, "SHOT 01" stamp, title, note); a final
-  numbered "And many more" row lists the rest (`shortName`s), then "View all 7 services" centred below · 03 `#prints` **From the darkroom**: `DarkroomWall`, the 3 featured prints as CSS objects
-  (open album, matted frame, canvas with wrapped edge, a fanned stack of prints, a closed photo book) for
-  all five prints, holding each print's `previewFilmIds` stills, museum labels, scrolling sideways in a
-  `Carousel` (`(←) View all prints and albums (→)`) · 04 `#reviews` **Kind words**: `ReviewCard`s (notched corner with a gold lens-ring monogram of the
+  numbered "And many more" row lists the rest (`shortName`s), then "View all 7 services" centred below · 03 `#prints` **From the darkroom**: `DarkroomWall`, the prints as CSS objects
+  (open album, walnut-framed print, canvas with its wrapped side, three loose prints, a closed photo book)
+  holding each print's `previewFilmIds` stills, **hanging from a drying line** (owner, 2026-09-29:
+  "realistic, not artistic"; see §3 "Detail"). The rope is a round twisted cord (layered SVG strokes + a
+  strand pattern) that sags as a real loaded line does (`drying-line.ts`, y = M(x)/H from each piece's weight
+  and clips, hooks off screen); `--line-scale` shrinks its drops below sm so phone tilts match desktop. Small
+  black binder clips with steel handles **wrap** the rope: back handle in a layer behind the rope, front
+  handle over the top and down in front, both into the body's rolled lip (rejected before this: gold pegs,
+  wooden pegs, paper clips, multicoloured clips). Wide pieces (album, canvas) hang on two clips, narrow ones
+  (frame, book, each loose print) on one; every piece settles to the rope's slope where it hangs
+  (`atan2(drop, run in cqw)`, exact at any width). Museum labels share one baseline under the pieces; it
+  scrolls sideways in a `Carousel` (`(←) View all prints and albums (→)`); with a mouse the pieces rest at 88%
+  and the one pointed at lights up. Photos are never torn (a torn wedding print reads as a breakup), so the
+  tear stays with the film strip · 04 `#reviews` **Kind words**: `ReviewCard`s (notched corner with a gold lens-ring monogram of the
   client's initials; no avatars) in a `Carousel`; **only rendered when real reviews exist**
   (`features/reviews/data/reviews.seed.ts`; dev shows labelled SAMPLE cards, production never) · 05
   `#about` **Behind the lens**: `BehindTheLens`, the founder's portrait in the splash's viewfinder (AF
@@ -248,6 +269,8 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
 ## 10. Workflow and verification
 
 - After changes: `npm run typecheck`, `npm run lint`, and for route/data changes `npm run build`.
+- For drawn objects, also check 2x close-up crops of the details (see §3 "Detail"). If you can't view
+  images yourself, have a fresh subagent review the screenshots bluntly.
 - Look at the result at 1440px and 390px/360px (headless Chrome via the DevTools protocol for widths below
   ~500px), checking for horizontal overflow and small tap targets, and the mobile dock with a
   viewport-sized shot.
