@@ -675,31 +675,46 @@
 .safelight-box .safelight-reflection { stroke: #fff; stroke-opacity: 0.16; stroke-width: 0.8; stroke-linecap: round; }
 .safelight-box .safelight-screw { fill: #3a3a3d; }
 
-/* The film light (scene 02): a pivot (--fx/--fy, the yoke's tilt lock) upper
-   left of the title card, beside the "Scene 02" line on phones, where it's
-   drawn at 3/4 size. A drop rod from the grid, the yoke's near arm in front,
+/* The film light (scene 02), desktop only (film-light.tsx hides it below lg;
+   owner, 2026-10-01): a pivot (--fx/--fy, the yoke's tilt lock) upper left of
+   the title card. A drop rod from the grid, the yoke's near arm in front,
    the head turning about the pivot (film-light.tsx sets its rotate; 30° down
    before that and without JavaScript). The barn doors are closed down to cut
-   the beam to 8° either side of its axis (from the lens edges back to a point
-   107px behind the lens), so it lands on one row's still: a hard-edged wedge
-   with a 2° penumbra, brightest near the lens and along its axis.
-   The layer fades out at the bottom so the beam never ends in an edge. */
-.film-light { --fx: 2.75rem; --fy: 46px; --fscale: 0.75; mask-image: linear-gradient(#000 calc(100% - 160px), transparent); }
-@media (min-width: 1024px) {
-  .film-light { --fx: max(4rem, calc(50% - 470px)); --fy: 150px; --fscale: 1; }
-}
+   the beam to 5.5° either side of its axis (from the lens edges back to a
+   point 156px behind the lens): a narrow hard-edged shaft with a 2° penumbra,
+   brightest near the lens and along its axis. --throw is how far the light
+   goes: at rest it rakes on and fades out (1600px); aimed at a row
+   (.is-aimed) the shaft ends where it lands and a focused pool of light sits
+   centred on the target: a little wider than the shaft there and longer
+   along it (it strikes the wall at an angle), soft, most of it behind the
+   still, so only a gentle glow shows round it (owner, 2026-10-01: "more
+   focused, a little faded", not a white ball). Throw and tilt move together,
+   so the pool slides from row to row like a follow spot. The layer fades out
+   at the bottom so the light never ends in an edge. */
+@property --throw { syntax: "<length>"; inherits: true; initial-value: 1600px; }
+.film-light { --fx: max(4rem, calc(50% - 470px)); --fy: 150px; mask-image: linear-gradient(#000 calc(100% - 160px), transparent); }
 .film-light-rod {
   position: absolute;
   left: var(--fx);
   top: 0;
   width: 3px;
-  height: calc(var(--fy) - 40px * var(--fscale));
+  height: calc(var(--fy) - 40px);
   translate: -50% 0;
   background: #333336;
   mask-image: linear-gradient(transparent, #000 30px);
 }
-.film-light-pivot { position: absolute; left: var(--fx); top: var(--fy); scale: var(--fscale); transform-origin: 0 0; }
-.film-light-head { position: absolute; left: 0; top: 0; transform-origin: 0 0; rotate: 30deg; transition: rotate 0.7s cubic-bezier(0.3, 0.7, 0.3, 1); will-change: transform; }
+.film-light-pivot { position: absolute; left: var(--fx); top: var(--fy); }
+.film-light-head {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  rotate: 30deg;
+  transition:
+    rotate 0.7s cubic-bezier(0.3, 0.7, 0.3, 1),
+    --throw 0.7s cubic-bezier(0.3, 0.7, 0.3, 1);
+  will-change: transform;
+}
 .film-light-housing { position: absolute; left: -32px; top: -34px; width: 88px; max-width: none; height: 68px; overflow: visible; }
 .film-light-yoke { position: absolute; left: -8px; top: -42px; width: 16px; max-width: none; height: 50px; overflow: visible; }
 .film-light-housing .film-light-leaf { fill: none; stroke: #2c2c30; stroke-width: 2.4; stroke-linecap: round; }
@@ -716,14 +731,32 @@
   position: absolute;
   left: 31px;
   top: -240px;
-  width: 1600px;
+  width: calc(var(--throw) - 31px);
   height: 480px;
   background:
-    radial-gradient(ellipse 45% 30% at 0 50%, rgb(250 240 225 / 0.08), transparent),
-    radial-gradient(ellipse 100% 22% at 0 50%, rgb(250 240 225 / 0.05), transparent),
-    linear-gradient(to right, rgb(250 240 225 / 0.15), rgb(250 240 225 / 0.085) 25%, rgb(250 240 225 / 0.042) 55%, transparent 95%);
-  mask-image: conic-gradient(from 81deg at -107px 50%, transparent, #000 2deg, #000 16deg, transparent 18deg);
+    radial-gradient(720px 144px at 0 50%, rgb(250 240 225 / 0.08), transparent),
+    radial-gradient(1600px 80px at 0 50%, rgb(250 240 225 / 0.05), transparent),
+    linear-gradient(to right, rgb(250 240 225 / 0.15), rgb(250 240 225 / 0.085) 400px, rgb(250 240 225 / 0.042) 880px, rgb(250 240 225 / 0.02) 1400px);
+  /* The barn doors' cut, and the shaft's last 160px fading out (under the pool when it's aimed). */
+  mask-image:
+    conic-gradient(from 83.5deg at -156px 50%, transparent, #000 2deg, #000 11deg, transparent 13deg),
+    linear-gradient(to left, transparent, #000 160px);
+  mask-composite: intersect;
 }
+.film-light-glow { position: absolute; left: 0; top: 0; }
+.film-light-pool {
+  --pool: calc((30px + (var(--throw) - 31px) * 0.1926) * 1.15); /* 1.15 × the shaft's width where it lands: 2 × (15px + run × tan 5.5°) */
+  position: absolute;
+  left: var(--throw);
+  top: 0;
+  width: calc(var(--pool) * 1.25);
+  height: var(--pool);
+  translate: -50% -50%;
+  background: radial-gradient(closest-side, rgb(250 240 225 / 0.13), rgb(250 240 225 / 0.1) 50%, rgb(250 240 225 / 0.05) 78%, transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.film-light-head.is-aimed .film-light-pool { opacity: 1; transition: opacity 0.45s ease 0.25s; }
 
 /* ── Autofocus brackets on cards (shared/components/ui/af-brackets.tsx) ──
    Owner's request (2026-10-01): the secondary button's brackets snap onto any

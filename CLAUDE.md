@@ -111,6 +111,12 @@ it. The darks were lifted a step for this; don't push them back down, and don't 
   fixture in view (a key light on 05's portrait without one read as a stray glow and was dropped). Each
   switches on as its scene comes into view and off once it's gone (`useLightSwitch` in `scene-light.tsx`,
   `.is-off` / `.lit`); without JS it's simply on. The hero stays unlit. globals.css "Scene lights".
+  **A light aimed at a photo must visibly land on it** (2026-10-01): the film light ends in a pool centred on
+  the still; a long beam that carries on past reads as missing, even when its axis is exact. (The lamp is the
+  owner's chosen exception: its cone just swings toward the frame.) Find the target under the
+  pointer from the targets' own boxes (getBoundingClientRect), not hit testing (with `elementFromPoint` the
+  light didn't aim in the owner's browser, though it did headless), and re-aim on every move and scroll,
+  never once per hover, so it can't go stale.
 - **The one exception: the home splash** (owner's request, 2026-09-27; loader idea from aakashacharya.com.np).
   A look through the studio's camera at a sunrise: viewfinder (frame corners, rule-of-thirds grid, mono
   readouts `AF-S · f/2.8 · 1/250 · ISO 100` / `RAW`), the `SunriseMark` draws (horizon, sun rises, rays) while
@@ -178,13 +184,18 @@ it. The darks were lifted a step for this; don't push them back down, and don't 
   top room for it: `pt-30 lg:pt-40`): black bell shade on a cord from the dark ceiling, the bulb glowing in
   its mouth, a warm cone on the wall behind the strip; with a mouse it leans toward the pointer (70% of the
   way, up to 22°); pointed at a film it turns fully onto its still (up to 40°, `data-spot`); it swings back
-  when the pointer leaves, as a damped pendulum (period ~2.4s, cord, shade and cone turning together) · 02 `#services` **The shot list**: `ShotList`, 4 featured services as numbered
+  when the pointer leaves, as a damped pendulum (period ~2.4s, cord, shade and cone turning together). Owner,
+  2026-10-01: keep it like this; a pool of light over the card, a swivelling shade and a 62° reach to the
+  card's top edge were tried and rejected · 02 `#services` **The shot list**: `ShotList`, 4 featured services as numbered
   rows; the service's `coverFilmId` still develops on hover (desktop), shows small on phones it becomes a
   storyboard (panels: full-width still, gold viewfinder corners, "SHOT 01" stamp, title, note); a final
   numbered "And many more" row lists the rest (`shortName`s), then "View all 7 services" centred below. Lit by a `FilmLight`
   (owner's pick, 2026-10-01): a Fresnel head in a yoke on a drop rod from the grid, upper left of the title
-  card (beside the "Scene 02" line on phones, 3/4 size), its barn doors closed to a hard-edged 16° wedge; with a
-  mouse it tilts (0.7s) to centre the wedge on the pointed row's still (`data-shot` rows, `data-spot-center`) · 03 `#prints` **From the darkroom**: `DarkroomWall`, the prints as CSS objects
+  card, **desktop only** (lg+; owner: not on phones or tablets), its barn doors closed to a hard-edged 11° shaft; at
+  rest it rakes into the list and fades out; with a mouse it tilts (0.7s) onto the pointed row and the shaft
+  ends (`--throw`) in a focused, soft pool of light centred on that row's still (`data-shot` rows,
+  `data-spot-center`; across a row without one), sliding from row to row like a follow spot (owner: "more
+  focused, a little faded", not a big white ball) · 03 `#prints` **From the darkroom**: `DarkroomWall`, the prints as CSS objects
   (open album, walnut-framed print, canvas with its wrapped side, three loose prints, a closed photo book)
   holding each print's `previewFilmIds` stills, **hanging from a drying line** (owner, 2026-09-29:
   "realistic, not artistic"; see §3 "Detail"). The rope is a round twisted cord (layered SVG strokes + a
