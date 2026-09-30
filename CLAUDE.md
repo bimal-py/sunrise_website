@@ -70,19 +70,22 @@ get plain props. `@/` imports, kebab-case files, named exports (except route fil
 
 ## 3. Design system (tokens in `app/globals.css`, never raw hex in components)
 
-Black and gold, from the logo. Dark neutral page; one gold.
+Black and gold, from the logo. Dark neutral page; one gold. **Keep the darks clear of the crush** (owner,
+2026-09-30: "it only looks nice with my brightness up"): at normal brightness a laptop shows everything
+below ~30/255 as one black, so structure (cards, borders, film base) and the scene lights must sit above
+it. The darks were lifted a step for this; don't push them back down, and don't rest photos darker than 82%.
 
 | Token | Tailwind | Value | Use |
 |---|---|---|---|
-| `--background` | `bg-background` | `#0B0B0C` | page (neutral black, no blue/brown tint) |
-| `--surface` / `--surface-raised` | `bg-surface` / `bg-raised` | `#141415` / `#1C1C1E` | cards, footer / inputs, hover rows |
-| `--surface-nav` / `-active` | `bg-nav` / `bg-nav-active` | `#111112` / `#25211A` | floating pill + dock / active item |
+| `--background` | `bg-background` | `#101011` | page (neutral black, no blue/brown tint) |
+| `--surface` / `--surface-raised` | `bg-surface` / `bg-raised` | `#19191B` / `#232326` | cards, footer / inputs, hover rows |
+| `--surface-nav` / `-active` | `bg-nav` / `bg-nav-active` | `#161618` / `#2C261B` | floating pill + dock / active item |
 | `--foreground-strong` | `text-strong` | `#F4F2EE` | headings |
-| `--foreground` / `--muted` | `text-foreground` / `text-muted` | `#D8D5CF` / `#A09C94` | body / secondary (7:1) |
-| `--border` / `--border-strong` | `border-line` / `border-line-strong` | `#262628` / `#3A3A3D` | dividers / nav, inputs, chips |
+| `--foreground` / `--muted` | `text-foreground` / `text-muted` | `#D8D5CF` / `#ACA89F` | body / secondary (8:1) |
+| `--border` / `--border-strong` | `border-line` / `border-line-strong` | `#2F2F32` / `#48484C` | dividers / nav, inputs, chips |
 | `--primary` | `bg-primary` `text-primary` | `#E0B24C` | logo gold: buttons, links, active, eyebrows, icons |
 | `--primary-strong` | `hover:bg-primary-strong` | `#F0C96B` | hover (lighter on dark) |
-| `--primary-soft` | `bg-primary-soft` | `#221D12` | selected chips, badges |
+| `--primary-soft` | `bg-primary-soft` | `#292216` | selected chips, badges |
 | `--on-primary` | `text-on-primary` | `#0B0B0C` | text on gold (never white) |
 
 - **Radius:** controls `rounded-control` 6px · cards `rounded-card` 8px · panels `rounded-panel` 10px ·
@@ -96,9 +99,18 @@ Black and gold, from the logo. Dark neutral page; one gold.
   http) and `type="submit"`. No other button styles; text links use `ViewAllLink` or plain gold links.
 - **Shadows:** none on cards (borders do the work). The only shadow: the floating nav pill, dock and More menu.
 - **Hover:** 150ms colour/border change. No lifts, scales, glows, parallax or entrance animations.
+  **Cards** (blog, service/print, film; owner, 2026-10-01): the secondary button's gold autofocus brackets
+  snap onto the card (`AfBrackets` + `af-card`, 6px outside the corners) instead of a gold border; the
+  border only steps to `line-strong`. Carousels holding cards give their track room so they aren't clipped.
   Exceptions are home-scene devices the owner asked for (listed with their scene in §4): the film strip's
-  tear and the darkroom's dim-until-pointed. Both are mouse/keyboard only (`@media (hover: hover)`), so
-  phones see the scene whole and at full brightness.
+  tear, the darkroom's dim-until-pointed, the pendant lamp leaning toward the pointer and the film light
+  tilting to the row pointed at. All are mouse/
+  keyboard only (`@media (hover: hover)` / `pointer: fine`), so phones see the scene whole and at full brightness.
+- **Scene lights (owner, 2026-09-30/10-01):** three home scenes are lit like sets, the one place gradients are
+  allowed: light falling on the wall behind the content, never over photos or UI. Every light has its
+  fixture in view (a key light on 05's portrait without one read as a stray glow and was dropped). Each
+  switches on as its scene comes into view and off once it's gone (`useLightSwitch` in `scene-light.tsx`,
+  `.is-off` / `.lit`); without JS it's simply on. The hero stays unlit. globals.css "Scene lights".
 - **The one exception: the home splash** (owner's request, 2026-09-27; loader idea from aakashacharya.com.np).
   A look through the studio's camera at a sunrise: viewfinder (frame corners, rule-of-thirds grid, mono
   readouts `AF-S · f/2.8 · 1/250 · ISO 100` / `RAW`), the `SunriseMark` draws (horizon, sun rises, rays) while
@@ -121,7 +133,7 @@ Black and gold, from the logo. Dark neutral page; one gold.
   (a clip wraps its rope: front handle over and in front, back handle behind), weight and gravity (a loaded
   rope sags and dips at each clip; a piece tilts only as the rope slopes), real proportions and materials,
   and light. "Looks roughly like it" reads as artificial. Check 2x close-up crops before showing anything.
-- **Banned:** gradients, gradient text, glass/blur, glows, dotted grids, blobs, abstract shapes, stock or
+- **Banned:** gradients (except the scene lights' light), gradient text, glass/blur, glows, dotted grids, blobs, abstract shapes, stock or
   AI images, decorative illustrations, repeated logo art, big decorative icons.
 - **Type:** h1/h2 Cormorant 600 (it runs small: H1 40–60px, H2 30–40px); h3 and UI Inter. Eyebrow
   `eyebrowClasses` (11px, uppercase, 0.14em, gold). Nepali lines sit under their English title.
@@ -162,10 +174,17 @@ Black and gold, from the logo. Dark neutral page; one gold.
   lg, like the portfolio); with a mouse the stills rest dim and the frame pointed at **tears out** (owner,
   2026-09-29): the strip splits either side with matching jagged edges and the frame comes 4% closer. The
   `<article>` is the fixed hover slot and the inner `.film-piece` moves, so the pointer never falls into a
-  torn gap and flickers · 02 `#services` **The shot list**: `ShotList`, 4 featured services as numbered
+  torn gap and flickers. Lit by a tungsten `PendantLamp` hanging over the title card (the section has extra
+  top room for it: `pt-30 lg:pt-40`): black bell shade on a cord from the dark ceiling, the bulb glowing in
+  its mouth, a warm cone on the wall behind the strip; with a mouse it leans toward the pointer (70% of the
+  way, up to 22°); pointed at a film it turns fully onto its still (up to 40°, `data-spot`); it swings back
+  when the pointer leaves, as a damped pendulum (period ~2.4s, cord, shade and cone turning together) · 02 `#services` **The shot list**: `ShotList`, 4 featured services as numbered
   rows; the service's `coverFilmId` still develops on hover (desktop), shows small on phones it becomes a
   storyboard (panels: full-width still, gold viewfinder corners, "SHOT 01" stamp, title, note); a final
-  numbered "And many more" row lists the rest (`shortName`s), then "View all 7 services" centred below · 03 `#prints` **From the darkroom**: `DarkroomWall`, the prints as CSS objects
+  numbered "And many more" row lists the rest (`shortName`s), then "View all 7 services" centred below. Lit by a `FilmLight`
+  (owner's pick, 2026-10-01): a Fresnel head in a yoke on a drop rod from the grid, upper left of the title
+  card (beside the "Scene 02" line on phones, 3/4 size), its barn doors closed to a hard-edged 16° wedge; with a
+  mouse it tilts (0.7s) to centre the wedge on the pointed row's still (`data-shot` rows, `data-spot-center`) · 03 `#prints` **From the darkroom**: `DarkroomWall`, the prints as CSS objects
   (open album, walnut-framed print, canvas with its wrapped side, three loose prints, a closed photo book)
   holding each print's `previewFilmIds` stills, **hanging from a drying line** (owner, 2026-09-29:
   "realistic, not artistic"; see §3 "Detail"). The rope is a round twisted cord (layered SVG strokes + a
@@ -178,7 +197,9 @@ Black and gold, from the logo. Dark neutral page; one gold.
   (`atan2(drop, run in cqw)`, exact at any width). Museum labels share one baseline under the pieces; it
   scrolls sideways in a `Carousel` (`(←) View all prints and albums (→)`); with a mouse the pieces rest at 88%
   and the one pointed at lights up. Photos are never torn (a torn wedding print reads as a breakup), so the
-  tear stays with the film strip · 04 `#reviews` **Kind words**: `ReviewCard`s (notched corner with a gold lens-ring monogram of the
+  tear stays with the film strip. Lit by a red `Safelight`: a small black box on its cord to the right of
+  the title card (beside the "Scene 03" line on phones), its red filter glowing behind a screwed bezel, a
+  halo round it and the room tinted dim red behind the line; the photos keep their own colours · 04 `#reviews` **Kind words**: `ReviewCard`s (notched corner with a gold lens-ring monogram of the
   client's initials; no avatars) in a `Carousel`; **only rendered when real reviews exist**
   (`features/reviews/data/reviews.seed.ts`; dev shows labelled SAMPLE cards, production never) · 05
   `#about` **Behind the lens**: `BehindTheLens`, the founder's portrait in the splash's viewfinder (AF
@@ -189,6 +210,15 @@ Black and gold, from the logo. Dark neutral page; one gold.
   DATE / SCENE / TAKE fields, then WhatsApp, call, email, address, socials.
   Featured items only; everything else lives on the detail pages. Keep new home content inside this scene
   concept rather than adding generic sections.
+- **Blog** (owner, 2026-10-01: "like the portfolio's blog"; `../personal_website`). Index: a centred header
+  (eyebrow, H1, Nepali line, lede, live `BlogSearch`), topic chips (round, mono, centred; topic and search
+  keep each other via `routes.blogFind`), a count when filtered, then `BlogCard`s three across (16:9 cover with
+  a "N min read" pill, gold mono date, title, summary, topic chips). Post: breadcrumbs → header (topic
+  links, H1, summary, mono meta "By · N min read · date · Updated") → credited cover → the article in a
+  panel beside a sticky `TocNav` "On this page" (xl+; above the article below xl; the section being read
+  gets a gold rule) → the WhatsApp ask → "Keep reading": `listRelated` (most shared tags) in a
+  `Carousel` aligned to the narrow container (`carousel-narrow`). Article type (`.prose-article`, shared
+  with service/print/film/about/privacy): 18px on a 1.9 line, 36px serif h2, 22px Inter h3.
 - **Hero** = the whole first screen (`min-h-[100svh]`), kept light like the portfolio's: centred
   `.hero-mark`, eyebrow (studio · place), H1 "Photos and films for the days you'll want to relive", the
   Nepali line, WhatsApp + films buttons, plain social icons (Facebook, YouTube, WhatsApp), and a desktop
@@ -250,12 +280,14 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
 - JSON-LD via `<JsonLd>`: home = `WebSite` + `LocalBusiness` (`@id` `/#studio`); contact = `LocalBusiness`;
   services/prints = `Service` (provider → `/#studio`) + `BreadcrumbList`; indexes = `ItemList`; film =
   `VideoObject`; post = `BlogPosting`. No ratings, reviews, prices or hours unless real.
-- `app/sitemap.ts` lists every canonical URL. `?category=` and `?tag=` views are `noindex, follow`.
+- `app/sitemap.ts` lists every canonical URL. `?category=`, `?tag=` and `?q=` views are `noindex, follow`.
 
 ## 9. Performance
 
 - Server components by default. Client components only: `FloatingNav`, `YouTubePlayer` (click-to-play
-  facade, youtube-nocookie), `BookingForm`, `SplashScreen` (session/skip only), `error.tsx`. No animation/carousel/lightbox libraries.
+  facade, youtube-nocookie), `BookingForm`, `SplashScreen` (session/skip only), `Carousel`, `Clapper`,
+  `SceneLight` / `PendantLamp` / `FilmLight` (light switch, lamp swing, light tilt), `TocNav` (scroll-spy),
+  `BlogSearch` (debounced `?q=`), `error.tsx`. No animation/carousel/lightbox libraries.
 - Images are **pre-built, never resized on request**: originals in `assets/images/{blog,films}/` →
   `scripts/optimize-images.py` → `public/images/<collection>/<name>-{480,800,1280}.webp` + `og/<name>.jpg`
   + `features/*/data/generated/images.json`. `next/image` uses `lib/image-loader.ts`. Always pass `sizes`,

@@ -14,7 +14,7 @@ function Perforations({ code }: { code?: string }) {
   return (
     <div className="film-perforations relative h-7">
       {code && (
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 bg-[#171718] pr-2 font-mono text-[9px] tracking-[0.2em] text-primary/80">{code}</span>
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 bg-[#1d1d1f] pr-2 font-mono text-[9px] tracking-[0.2em] text-primary/80">{code}</span>
       )}
     </div>
   );
@@ -29,17 +29,18 @@ function Perforations({ code }: { code?: string }) {
  * the film splits either side of it and it comes closer (globals.css "Film
  * strip"). The article is the frame's fixed slot and takes the hover; the
  * piece inside it is what moves, so a torn edge never slips out from under the
- * pointer.
+ * pointer. Frames are marked for the scene's lamp (data-spot, the still
+ * data-spot-center), which turns to light the one you point at.
  */
 export function FilmStrip({ films, total, center }: { films: Film[]; total: number; center?: ReactNode }) {
   return (
     <Carousel label="Films" gap="gap-0" center={center} className="film-strip">
       {films.map((film, index) => (
-        <article key={film.id} className="film-frame group relative w-[78vw] shrink-0 snap-start sm:w-[380px] lg:w-[420px]">
+        <article key={film.id} data-spot className="film-frame group relative w-[78vw] shrink-0 snap-start sm:w-[380px] lg:w-[420px]">
           <div className="film-piece relative">
             <Perforations code={`SUNRISE 400  ▸ ${String(index + 1).padStart(2, "0")}A`} />
             <div className="px-3">
-              <div className="relative overflow-hidden rounded-[3px] bg-black">
+              <div data-spot-center className="relative overflow-hidden rounded-[3px] bg-black">
                 {film.thumbnail && (
                   <Image
                     src={film.thumbnail.src}
@@ -73,7 +74,7 @@ export function FilmStrip({ films, total, center }: { films: Film[]; total: numb
       ))}
 
       {/* End of roll: the last frame leads to all films. */}
-      <article className="film-frame group relative flex w-[60vw] shrink-0 snap-start sm:w-[280px]">
+      <article data-spot className="film-frame group relative flex w-[60vw] shrink-0 snap-start sm:w-[280px]">
         <div className="film-piece relative flex flex-1 flex-col">
           <Perforations code="END OF ROLL" />
           <div className="flex flex-1 flex-col items-start justify-end px-6 pb-4">

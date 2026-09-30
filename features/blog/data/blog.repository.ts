@@ -80,11 +80,33 @@ const listAll = cache(async (): Promise<BlogPostPreview[]> => {
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || Number(b.featured) - Number(a.featured));
 });
 
+/** Every word of the query (case-insensitive) appears in the post's title, summary or tags. */
+function matches(post: BlogPostPreview, q: string): boolean {
+  const haystack = [post.title, post.summary, ...post.tags].join(" ").toLowerCase();
+  return q
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((word) => haystack.includes(word));
+}
+
 export const blogRepository: BlogRepository = {
-  async listPosts({ tag, limit } = {}) {
+  async listPosts({ tag, q, limit } = {}) {
+    let posts = await listAll();
+    if (tag) posts = posts.filter((post) => post.tags.some((t) => tagSlug(t) === tag));
+    if (q?.trim()) posts = posts.filter((post) => matches(post, q));
+    return limit ? posts.slice(0, limit) : posts;
+  },
+
+  async listRelated(slug, limit) {
     const posts = await listAll();
-    const filtered = tag ? posts.filter((post) => post.tags.some((t) => tagSlug(t) === tag)) : posts;
-    return limit ? filtered.slice(0, limit) : filtered;
+    const tags = new Set(posts.find((post) => post.slug === slug)?.tags);
+    const shared = (post: BlogPostPreview) => post.tags.filter((tag) => tags.has(tag)).length;
+    // listAll is newest first and sort is stable, so ties stay newest first.
+    return posts
+      .filter((post) => post.slug !== slug)
+      .sort((a, b) => shared(b) - shared(a))
+      .slice(0, limit);
   },
 
   async getPost(slug): Promise<BlogPost | null> {

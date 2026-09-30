@@ -17,7 +17,10 @@ import { Carousel } from "@/shared/components/ui/carousel";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 import { BehindTheLens } from "../components/behind-the-lens";
 import { DarkroomWall } from "../components/darkroom-wall";
+import { FilmLight } from "../components/film-light";
 import { FilmStrip } from "../components/film-strip";
+import { PendantLamp } from "../components/pendant-lamp";
+import { Safelight } from "../components/safelight";
 import { SceneHeading } from "../components/scene-heading";
 import { SceneLink } from "../components/scene-link";
 import { ShotList } from "../components/shot-list";
@@ -25,16 +28,21 @@ import { Slate } from "../components/slate";
 import { SplashScreen } from "../components/splash-screen";
 
 const section = "py-16 lg:py-20";
+// A lit scene (globals.css "Scene lights"): its light sits in a layer behind the content.
+const litSection = "relative isolate";
 
 /**
  * Home. After the full-screen intro, the page is told as a short film in
  * numbered scenes, each with its own photographic device:
  *   01 Now showing: the films as a 35mm film strip you scroll sideways
  *   02 The shot list: the services as a director's shot list, stills develop on hover
- *   03 From the darkroom: the prints as objects on a gallery wall (album, frame, canvas)
+ *   03 From the darkroom: the prints as objects hanging on a drying line
  *   04 Kind words: reviews, notched cards with a lens monogram (only once real reviews exist)
  *   05 Behind the lens: the founder in the splash's viewfinder (the studio until added)
  *   06 Book a date: a clapperboard slate that claps as it scrolls in
+ * Scenes 01–03 are lit like sets as they come into view: a pendant lamp over
+ * the film strip, a film light on the shot list, a red safelight in the
+ * darkroom.
  * Featured items only; everything else lives on each section's page. Section
  * ids match `navItems` (lib/constants/navigation.ts), which scrolls to them.
  */
@@ -122,7 +130,9 @@ export async function HomePageView() {
       </section>
 
       {/* ── The rest of the page is told in scenes (see SceneHeading). ── */}
-      <section id="films" aria-labelledby="films-heading" className={section}>
+      {/* The lamp hangs in the extra room above the title card. */}
+      <section id="films" aria-labelledby="films-heading" className={`${litSection} pb-16 pt-30 lg:pb-20 lg:pt-40`}>
+        <PendantLamp />
         <Container>
           <SceneHeading
             scene={sceneOf("films")}
@@ -138,7 +148,8 @@ export async function HomePageView() {
           } />
       </section>
 
-      <section id="services" aria-labelledby="services-heading" className={section}>
+      <section id="services" aria-labelledby="services-heading" className={`${litSection} ${section}`}>
+        <FilmLight />
         <Container>
           <SceneHeading
             scene={sceneOf("services")}
@@ -153,7 +164,8 @@ export async function HomePageView() {
         </Container>
       </section>
 
-      <section id="prints" aria-labelledby="prints-heading" className={section}>
+      <section id="prints" aria-labelledby="prints-heading" className={`${litSection} ${section}`}>
+        <Safelight />
         <Container>
           <SceneHeading
             scene={sceneOf("prints")}

@@ -57,7 +57,10 @@ export function Carousel({
         }
       });
       setActive(best);
-      setEdges({ start: el.scrollLeft < 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 });
+      // A new object only when an edge actually changes, so scrolling doesn't re-render the carousel every frame.
+      const start = el.scrollLeft < 4;
+      const end = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+      setEdges((edges) => (edges.start === start && edges.end === end ? edges : { start, end }));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(measure);

@@ -19,6 +19,14 @@ export const routes = {
   blog: () => "/blogs",
   post: (slug: string) => `/blogs/${slug}`,
   blogTopic: (tag: string) => `/blogs?tag=${tag}`,
+  /** The blog filtered by topic and/or search words (either may be empty). */
+  blogFind: ({ tag, q }: { tag?: string; q?: string }) => {
+    const params = new URLSearchParams();
+    if (tag) params.set("tag", tag);
+    if (q?.trim()) params.set("q", q.trim());
+    const query = params.toString();
+    return query ? `/blogs?${query}` : "/blogs";
+  },
   about: () => "/about",
   contact: () => "/contact",
   privacy: () => "/privacy",

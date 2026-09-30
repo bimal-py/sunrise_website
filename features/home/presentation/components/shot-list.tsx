@@ -18,7 +18,10 @@ const corner = "absolute h-3.5 w-3.5 border-primary";
  * Desktop (lg+): a director's shot list. Numbered rows, serif titles, a note
  * column; hovering a row develops the still into view on the right.
  *
- * Both end with an "And many more" entry for the services not listed.
+ * Both end with an "And many more" entry for the services not listed. The
+ * rows are marked (data-shot, their still data-spot-center) for the scene's
+ * film light, which tilts to put its beam on the still of the row you point
+ * at (film-light.tsx).
  */
 export function ShotList({ services, stills, others }: { services: Service[]; stills: Record<string, FilmImage>; others: Service[] }) {
   const label = "font-mono text-[10px] uppercase tracking-[0.2em] text-muted";
@@ -30,12 +33,13 @@ export function ShotList({ services, stills, others }: { services: Service[]; st
         <span>Notes</span>
         <span className="text-right">Still</span>
       </div>
-      <ol className="flex flex-col gap-5 lg:gap-0">
+      <ol data-shot-list className="flex flex-col gap-5 lg:gap-0">
         {services.map((service, index) => {
           const still = service.coverFilmId ? stills[service.coverFilmId] : undefined;
           return (
             <li
               key={service.slug}
+              data-shot
               className="group relative overflow-hidden rounded-card border border-line bg-surface lg:overflow-visible lg:rounded-none lg:border-0 lg:border-b lg:bg-transparent"
             >
               <div className="flex flex-col lg:grid lg:grid-cols-[64px_1.2fr_1fr_180px] lg:items-start lg:gap-6 lg:py-8">
@@ -43,7 +47,7 @@ export function ShotList({ services, stills, others }: { services: Service[]; st
 
                 {/* The still: a storyboard frame on phones; on desktop it floats at the row's right edge and develops on hover. */}
                 {still && (
-                  <div className="relative order-first aspect-[16/9] w-full lg:pointer-events-none lg:absolute lg:right-0 lg:top-1/2 lg:order-none lg:aspect-[3/2] lg:w-[180px] lg:-translate-y-1/2 lg:opacity-0 lg:transition-opacity lg:duration-300 lg:group-hover:opacity-100">
+                  <div data-spot-center className="relative order-first aspect-[16/9] w-full lg:pointer-events-none lg:absolute lg:right-0 lg:top-1/2 lg:order-none lg:aspect-[3/2] lg:w-[180px] lg:-translate-y-1/2 lg:opacity-0 lg:transition-opacity lg:duration-300 lg:group-hover:opacity-100">
                     <Image
                       src={still.src}
                       alt=""
@@ -89,7 +93,7 @@ export function ShotList({ services, stills, others }: { services: Service[]; st
         })}
         {others.length > 0 && (
           // The list goes on: one more entry for everything not listed above.
-          <li className="rounded-card border border-dashed border-line-strong p-5 lg:grid lg:grid-cols-[64px_1fr] lg:items-baseline lg:gap-6 lg:rounded-none lg:border-0 lg:border-b lg:border-solid lg:border-line lg:px-0 lg:py-6">
+          <li data-shot className="rounded-card border border-dashed border-line-strong p-5 lg:grid lg:grid-cols-[64px_1fr] lg:items-baseline lg:gap-6 lg:rounded-none lg:border-0 lg:border-b lg:border-solid lg:border-line lg:px-0 lg:py-6">
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary lg:text-xs lg:normal-case lg:tracking-normal">
               <span className="lg:hidden">{shot(services.length + 1)}</span>
               <span className="hidden lg:inline">{String(services.length + 1).padStart(2, "0")}</span>

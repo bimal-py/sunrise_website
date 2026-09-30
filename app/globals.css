@@ -4,23 +4,26 @@
    The whole palette, taken from the logo: black and gold. Neutral near-black
    page, charcoal cards, one gold for actions and small accents. Components use
    these tokens (via the Tailwind aliases below), never raw hex. See CLAUDE.md §3
-   before adding anything here. */
+   before adding anything here. The darks were lifted a step (2026-09-30): at
+   normal screen brightness a laptop shows everything below about 30/255 as the
+   same black, so the page, cards, borders and the scene lights must sit clear
+   of it to read without turning the screen up. */
 :root {
-  --background: #0b0b0c;          /* page: the logo's black, neutral (no blue, no brown) */
-  --surface: #141415;             /* cards, panels, footer */
-  --surface-raised: #1c1c1e;      /* inputs, nested fills, hover rows */
-  --surface-nav: #111112;         /* floating nav pill and mobile dock */
-  --surface-nav-active: #25211a;  /* active nav item: black with a trace of gold */
+  --background: #101011;          /* page: the logo's black, neutral (no blue, no brown) */
+  --surface: #19191b;             /* cards, panels, footer */
+  --surface-raised: #232326;      /* inputs, nested fills, hover rows */
+  --surface-nav: #161618;         /* floating nav pill and mobile dock */
+  --surface-nav-active: #2c261b;  /* active nav item: black with a trace of gold */
 
-  --foreground-strong: #f4f2ee;   /* headings, important type (18:1 on page) */
+  --foreground-strong: #f4f2ee;   /* headings, important type (17:1 on page) */
   --foreground: #d8d5cf;          /* main text (13:1) */
-  --muted: #a09c94;               /* secondary text, metadata (7:1) */
-  --border: #262628;              /* all borders/dividers */
-  --border-strong: #3a3a3d;       /* nav, inputs, hovered neutral cards */
+  --muted: #aca89f;               /* secondary text, metadata (8:1) */
+  --border: #2f2f32;              /* all borders/dividers */
+  --border-strong: #48484c;       /* nav, inputs, hovered neutral cards */
 
-  --primary: #e0b24c;             /* logo gold: primary buttons, links, active, focus (10:1 on page) */
+  --primary: #e0b24c;             /* logo gold: primary buttons, links, active, focus (9.6:1 on page) */
   --primary-strong: #f0c96b;      /* hover/pressed: a lighter gold on dark */
-  --primary-soft: #221d12;        /* selected chips, badges */
+  --primary-soft: #292216;        /* selected chips, badges */
   --on-primary: #0b0b0c;          /* text on gold fills */
 
   --success: #7cc49a;
@@ -233,52 +236,64 @@
   }
 }
 
-/* ── Long-form article typography (blog posts, detail pages) ── */
+/* ── Long-form article typography (blog posts, detail pages) ──
+   Sized like the owner's portfolio blog (2026-10-01): 18px body on a roomy
+   line, 36px section headings with generous space above, lists on the same
+   rhythm, quotes as a raised panel with a gold rule. Fonts stay this site's:
+   h2 in the display serif, h3 in Inter. */
 .prose-article {
-  font-size: 1.0625rem;
-  line-height: 1.75;
+  font-size: 1.125rem;
+  line-height: 1.9;
   color: var(--foreground);
   overflow-wrap: anywhere; /* long emails/URLs wrap instead of widening the page on phones */
 }
 .prose-article > * + *,
-.prose-article section > * + * { margin-top: 1em; }
-.prose-article section > h2:first-child { margin-top: 1.8em; }
+.prose-article section > * + * { margin-top: 1.5rem; }
+.prose-article > :first-child { margin-top: 0; }
+.prose-article section > h2:first-child { margin-top: 3.5rem; }
 .prose-article h2 {
-  margin-top: 1.8em;
-  font-size: 2rem;
+  margin-top: 3.5rem;
+  font-size: 2.25rem;
+  line-height: 1.15;
   scroll-margin-top: 7rem;
 }
 .prose-article h3 {
-  margin-top: 1.6em;
-  font-size: 1.2rem;
+  margin-top: 2.5rem;
+  font-size: 1.375rem;
   font-weight: 600;
+  line-height: 1.35;
   scroll-margin-top: 7rem;
 }
+.prose-article :is(h2, h3) + * { margin-top: 1rem; }
 .prose-article a {
   color: var(--primary);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: 4px;
   text-decoration-thickness: 1px;
 }
 .prose-article a:hover { color: var(--primary-strong); }
 .prose-article ul,
-.prose-article ol { padding-left: 1.4em; }
+.prose-article ol { padding-left: 1.5em; }
 .prose-article ul { list-style: disc; }
 .prose-article ol { list-style: decimal; }
-.prose-article li + li { margin-top: 0.4em; }
+.prose-article li + li { margin-top: 0.75rem; }
 .prose-article li::marker { color: var(--primary); }
 .prose-article strong { color: var(--foreground-strong); font-weight: 600; }
 .prose-article blockquote {
-  border-left: 2px solid var(--primary);
-  padding: 0.25em 0 0.25em 1.1em;
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  padding: 1.25rem 1.5rem;
+  font-style: italic;
   color: var(--foreground-strong);
 }
+.prose-article img { border: 1px solid var(--border); border-radius: var(--radius-card); }
 .prose-article table {
   display: block;               /* wide tables scroll sideways on phones */
   overflow-x: auto;
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 .prose-article th,
 .prose-article td {
@@ -290,7 +305,7 @@
 }
 .prose-article td:last-child { white-space: normal; }
 .prose-article th { color: var(--foreground-strong); font-weight: 600; }
-.prose-article hr { border: 0; border-top: 1px solid var(--border); margin: 2.4em 0; }
+.prose-article hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
 
 /* ── Splash (home page, every full load; features/home/presentation/components/splash-screen.tsx) ──
    The one deliberate animation on the site (CLAUDE.md §3): a look through a
@@ -421,17 +436,25 @@
 @media (min-width: 1024px) {
   .carousel-track { --edge: max(2rem, calc((100vw - 80rem) / 2 + 2rem)); }
 }
+/* In a detail page (<Container narrow>, 72rem) the first item lines up with that instead. */
+.carousel-narrow .carousel-track { --edge: max(1rem, calc((100vw - 72rem) / 2 + 1rem)); }
+@media (min-width: 640px) {
+  .carousel-narrow .carousel-track { --edge: max(1.5rem, calc((100vw - 72rem) / 2 + 1.5rem)); }
+}
+@media (min-width: 1024px) {
+  .carousel-narrow .carousel-track { --edge: max(2rem, calc((100vw - 72rem) / 2 + 2rem)); }
+}
 
 /* ── Film strip (features/home/presentation/components/film-strip.tsx) ──
    35mm stock: a dark film base with a row of sprocket holes above and below
    each frame. Frames sit edge to edge, so the holes run on as one strip. The
    holes are an SVG pattern (rounded rectangles in the page colour). */
 .film-piece {
-  background-color: #171718;
-  border-inline: 1px solid #0b0b0c; /* the thin line between frames */
+  background-color: #1d1d1f;
+  border-inline: 1px solid var(--background); /* the thin line between frames */
 }
 .film-perforations {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='28'%3E%3Crect x='7' y='8' width='10' height='12' rx='2.5' fill='%230b0b0c'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='28'%3E%3Crect x='7' y='8' width='10' height='12' rx='2.5' fill='%23101011'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-position: 0 center;
 }
@@ -486,6 +509,7 @@
     );
     transition-property: transform, --tear-left, --tear-right;
     transition-duration: 0.35s;
+    will-change: transform; /* the frames slide apart on the compositor, without repainting their stills */
     transition-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
   }
   /* The frame pointed at (or holding keyboard focus). */
@@ -501,7 +525,7 @@
   .film-frame:has(~ .film-frame:hover) .film-piece,
   .film-frame:has(~ .film-frame :focus-visible) .film-piece { transform: translateX(-14px); }
 
-  .film-still { filter: brightness(0.7); transition: filter 0.3s ease; }
+  .film-still { filter: brightness(0.82); transition: filter 0.3s ease; }
   .film-frame:is(:hover, :has(:focus-visible)) .film-still { filter: none; }
 }
 
@@ -554,9 +578,178 @@
 .darkroom-clip .clip-shine { stroke: #7a7a80; stroke-width: 0.7; }
 .darkroom-clip .clip-contact { stroke: #000; stroke-opacity: 0.35; stroke-width: 1; }
 @media (hover: hover) {
-  .darkroom-dim { filter: brightness(0.88); transition: filter 0.3s ease; }
+  .darkroom-dim { filter: brightness(0.92); transition: filter 0.3s ease; }
   .darkroom-item:is(:hover, :has(:focus-visible)) .darkroom-dim { filter: none; }
 }
+
+/* ── Scene lights (home; features/home/presentation/components/{scene-light,pendant-lamp,film-light,safelight}.tsx) ──
+   Three scenes are lit like sets (owner's requests, 2026-09-30/10-01): 01
+   hangs a tungsten pendant lamp over its title card, 02 is lit by a film
+   light with barn doors, 03 is a darkroom under a red safelight. Every light has its fixture in view: light without a source
+   reads as a stray glow (a key light on 05's portrait was tried and dropped
+   for that). The only gradients on the site: light falling on the wall
+   behind the content (never over photos or UI). Each light sits in a layer behind its
+   scene (-z-10 in an isolated section), switches on as the scene comes into
+   view and off once it has gone (.is-off, from useLightSwitch); without
+   JavaScript it's simply on. Parts marked .lit are there only while it's on.
+   The layers fade out top and bottom so no light ends in a hard edge. */
+.lit { transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.is-off .lit,
+.is-off.lit { opacity: 0; transition-duration: 0.6s; }
+.lamp-light { mask-image: linear-gradient(transparent, #000 36px, #000 calc(100% - 160px), transparent); }
+
+/* The pendant: a pivot at the top centre (the hook, faded into the dark
+   ceiling), the cord, the shade, and the light, all turning together. The
+   cone's edges leave the shade's rim at 35° either side, from the bulb 37px
+   up inside it; its brightness falls off with distance from the bulb. */
+/* will-change: the swing runs every frame; on its own layer it's turned by the compositor, never repainted. */
+.lamp { --cord: 48px; position: absolute; left: 50%; top: 0; transform-origin: 0 0; will-change: transform; }
+@media (min-width: 1024px) {
+  .lamp { --cord: 76px; }
+}
+.lamp-cord { position: absolute; left: -1px; top: 0; width: 2px; height: calc(var(--cord) + 1px); background: #333336; }
+.lamp-shade { position: absolute; top: var(--cord); left: -28px; width: 56px; max-width: none; height: 42px; overflow: visible; }
+.lamp-shade .lamp-cap { fill: #161617; stroke: #2e2e30; stroke-width: 0.8; }
+.lamp-shade .lamp-body { fill: #0f0f10; stroke: #2e2e30; stroke-width: 0.9; stroke-linejoin: round; }
+.lamp-shade .lamp-sheen { fill: none; stroke: #45454a; stroke-width: 0.9; stroke-linecap: round; }
+.lamp-shade .lamp-mouth { fill: #1a1a1b; stroke: #3a3a3d; stroke-width: 0.8; }
+.lamp-beam {
+  position: absolute;
+  top: calc(var(--cord) + 38px);
+  left: -800px;
+  width: 1600px;
+  height: 1100px;
+  background: radial-gradient(
+    circle at 50% -37px,
+    rgb(255 224 180 / 0.24),
+    rgb(255 224 180 / 0.15) 120px,
+    rgb(255 224 180 / 0.08) 340px,
+    rgb(255 224 180 / 0.035) 640px,
+    transparent 1000px
+  );
+  mask-image: conic-gradient(from 139deg at 50% -37px, transparent, #000 12deg, #000 70deg, transparent 82deg);
+}
+/* The light the bulb throws about the room, lifting the wall round the shade. */
+.lamp-halo {
+  position: absolute;
+  top: calc(var(--cord) + 38px);
+  left: -220px;
+  width: 440px;
+  height: 440px;
+  translate: 0 -50%;
+  background: radial-gradient(closest-side, rgb(255 224 180 / 0.1), transparent);
+}
+
+/* The safelight: the box on the wall (--sx/--sy is its centre), on the right
+   of the title card: beside the "Scene 03" line on phones, beside the title
+   on laptops. Its light: a halo round it, then the room tinted red. The red
+   fades in over the scene's first 240px (160px on phones), so it starts
+   inside the darkroom rather than at the edge of the scene above; the cord
+   fades into the dark ceiling. */
+.safelight { --sx: calc(100% - 2.75rem); --sy: 72px; --fade-in: 160px; }
+@media (min-width: 1024px) {
+  .safelight { --sx: min(calc(50% + 470px), calc(100% - 4rem)); --sy: 140px; --fade-in: 240px; }
+}
+.safelight-wash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at var(--sx) var(--sy),
+      rgb(220 48 34 / 0.26),
+      rgb(220 48 34 / 0.12) 60px,
+      rgb(200 38 28 / 0.06) 200px,
+      transparent 400px
+    ),
+    radial-gradient(ellipse 110% 85% at var(--sx) var(--sy), rgb(176 30 22 / 0.18), rgb(176 30 22 / 0.08) 50%, transparent);
+  mask-image: linear-gradient(transparent, #000 var(--fade-in), #000 calc(100% - 160px), transparent);
+}
+.safelight-cord { position: absolute; left: var(--sx); top: 0; width: 2px; height: var(--sy); translate: -50% 0; background: #333336; mask-image: linear-gradient(transparent, #000 36px); }
+.safelight-box { position: absolute; left: var(--sx); top: var(--sy); width: 32px; translate: -50% -50%; overflow: visible; }
+@media (min-width: 1024px) {
+  .safelight-box { width: 42px; }
+}
+.safelight-box .safelight-grommet { fill: #1c1c1e; }
+.safelight-box .safelight-body { fill: #121213; stroke: #2e2e30; stroke-width: 0.8; }
+.safelight-box .safelight-glass-off { fill: #2a0f0d; }
+.safelight-box .safelight-reflection { stroke: #fff; stroke-opacity: 0.16; stroke-width: 0.8; stroke-linecap: round; }
+.safelight-box .safelight-screw { fill: #3a3a3d; }
+
+/* The film light (scene 02): a pivot (--fx/--fy, the yoke's tilt lock) upper
+   left of the title card, beside the "Scene 02" line on phones, where it's
+   drawn at 3/4 size. A drop rod from the grid, the yoke's near arm in front,
+   the head turning about the pivot (film-light.tsx sets its rotate; 30° down
+   before that and without JavaScript). The barn doors are closed down to cut
+   the beam to 8° either side of its axis (from the lens edges back to a point
+   107px behind the lens), so it lands on one row's still: a hard-edged wedge
+   with a 2° penumbra, brightest near the lens and along its axis.
+   The layer fades out at the bottom so the beam never ends in an edge. */
+.film-light { --fx: 2.75rem; --fy: 46px; --fscale: 0.75; mask-image: linear-gradient(#000 calc(100% - 160px), transparent); }
+@media (min-width: 1024px) {
+  .film-light { --fx: max(4rem, calc(50% - 470px)); --fy: 150px; --fscale: 1; }
+}
+.film-light-rod {
+  position: absolute;
+  left: var(--fx);
+  top: 0;
+  width: 3px;
+  height: calc(var(--fy) - 40px * var(--fscale));
+  translate: -50% 0;
+  background: #333336;
+  mask-image: linear-gradient(transparent, #000 30px);
+}
+.film-light-pivot { position: absolute; left: var(--fx); top: var(--fy); scale: var(--fscale); transform-origin: 0 0; }
+.film-light-head { position: absolute; left: 0; top: 0; transform-origin: 0 0; rotate: 30deg; transition: rotate 0.7s cubic-bezier(0.3, 0.7, 0.3, 1); will-change: transform; }
+.film-light-housing { position: absolute; left: -32px; top: -34px; width: 88px; max-width: none; height: 68px; overflow: visible; }
+.film-light-yoke { position: absolute; left: -8px; top: -42px; width: 16px; max-width: none; height: 50px; overflow: visible; }
+.film-light-housing .film-light-leaf { fill: none; stroke: #2c2c30; stroke-width: 2.4; stroke-linecap: round; }
+.film-light-housing .film-light-body { fill: #161618; stroke: #3a3a3e; stroke-width: 0.9; stroke-linejoin: round; }
+.film-light-housing .film-light-vent { fill: #0c0c0d; }
+.film-light-housing .film-light-knob { fill: #202023; stroke: #3a3a3e; stroke-width: 0.6; }
+.film-light-housing .film-light-ring { fill: #1d1d20; stroke: #45454a; stroke-width: 0.8; }
+.film-light-housing .film-light-lens { fill: #2a2a2d; }
+.film-light-yoke .film-light-clamp { fill: #1d1d20; stroke: #3a3a3e; stroke-width: 0.7; }
+.film-light-yoke .film-light-arm { fill: #202023; stroke: #45454a; stroke-width: 0.8; }
+.film-light-yoke .film-light-lock { fill: #242427; stroke: #4c4c51; stroke-width: 0.9; }
+.film-light-yoke .film-light-lock-core { fill: #111112; }
+.film-light-beam {
+  position: absolute;
+  left: 31px;
+  top: -240px;
+  width: 1600px;
+  height: 480px;
+  background:
+    radial-gradient(ellipse 45% 30% at 0 50%, rgb(250 240 225 / 0.08), transparent),
+    radial-gradient(ellipse 100% 22% at 0 50%, rgb(250 240 225 / 0.05), transparent),
+    linear-gradient(to right, rgb(250 240 225 / 0.15), rgb(250 240 225 / 0.085) 25%, rgb(250 240 225 / 0.042) 55%, transparent 95%);
+  mask-image: conic-gradient(from 81deg at -107px 50%, transparent, #000 2deg, #000 16deg, transparent 18deg);
+}
+
+/* ── Autofocus brackets on cards (shared/components/ui/af-brackets.tsx) ──
+   Owner's request (2026-10-01): the secondary button's brackets snap onto any
+   card you point at (blog, service, print, film) in place of a gold hover
+   border: the camera locking focus on what you're about to open. Just outside
+   the corners, a little larger than the button's; they come in from 6% wider.
+   A carousel holding cards gives its track room so they aren't clipped. */
+.af-brackets {
+  position: absolute;
+  inset: -6px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.06);
+  transition:
+    opacity 0.15s ease,
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.af-card:hover .af-brackets,
+.af-card:has(:focus-visible) .af-brackets { opacity: 1; transform: none; }
+.af-brackets i { position: absolute; width: 14px; height: 14px; border: 0 solid var(--primary); }
+.af-brackets i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; border-top-left-radius: 4px; }
+.af-brackets i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; border-top-right-radius: 4px; }
+.af-brackets i:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; border-bottom-left-radius: 4px; }
+.af-brackets i:nth-child(4) { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; border-bottom-right-radius: 4px; }
+.carousel-track:has(.af-card) { padding-block: 8px; margin-block: -8px; }
 
 /* ── Review card notch (features/reviews/presentation/components/review-card.tsx) ──
    A circle scooped out of the card's top-right corner (a mask, not a visual
@@ -571,7 +764,7 @@
    hinges at its bottom-left corner and rests closed; each time the slate
    scrolls into view it plays one open-and-clap (clapper.tsx). */
 .slate-stripes {
-  background-color: #1c1c1e; /* the sticks' dark body, lighter than the page so the open stick reads */
+  background-color: #232326; /* the sticks' dark body, lighter than the page so the open stick reads */
   outline: 1px solid var(--border-strong);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='48'%3E%3Cpolygon points='0,48 24,0 48,0 24,48' fill='%23e0b24c'/%3E%3C/svg%3E");
   background-size: 64px 100%;
