@@ -9,6 +9,7 @@ import type { Print } from "@/features/prints/domain/entities";
 export const prints: Print[] = [
   {
     slug: "premium-albums",
+    mockup: "album",
     previewFilmIds: ["2thTrQR3pec", "Rk2D0cbQK34"],
     featured: true,
     name: "Premium wedding albums",
@@ -54,6 +55,7 @@ export const prints: Print[] = [
   },
   {
     slug: "photo-frames",
+    mockup: "frame",
     previewFilmIds: ["tlucLNe7aQI"],
     featured: true,
     name: "Photo frames",
@@ -101,6 +103,7 @@ export const prints: Print[] = [
   },
   {
     slug: "canvas-prints",
+    mockup: "canvas",
     previewFilmIds: ["GTBeZRAIcWQ"],
     featured: true,
     name: "Canvas prints",
@@ -142,6 +145,7 @@ export const prints: Print[] = [
   },
   {
     slug: "photo-prints",
+    mockup: "loose-prints",
     previewFilmIds: ["xZHzDT7CFSs", "nqMUJ7J7qTg", "Rk2D0cbQK34"],
     featured: false,
     name: "Photo prints",
@@ -187,6 +191,7 @@ export const prints: Print[] = [
   },
   {
     slug: "photo-books",
+    mockup: "book",
     previewFilmIds: ["QZtJ6EMi_vk"],
     featured: false,
     name: "Photo books",

@@ -1,5 +1,6 @@
 import { Mail, MapPin, Phone } from "lucide-react";
-import { siteConfig, whatsappUrl } from "@/lib/config/site";
+import type { SiteSettings } from "@/features/site/domain/entities";
+import { whatsappUrl } from "@/lib/config/site";
 import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 import { Clapper } from "./clapper";
@@ -14,9 +15,9 @@ const social =
  * day is the production and the studio is behind the camera. The top stick
  * claps once as it scrolls into view. Then the ways to book.
  */
-export function Slate({ scene }: { scene: number }) {
-  const { contact, address, social: socials } = siteConfig;
-  const message = `Hello ${siteConfig.name}, I'd like to book a date. The occasion is: `;
+export function Slate({ scene, site }: { scene: number; site: SiteSettings }) {
+  const { contact, address, social: socials } = site;
+  const message = `Hello ${site.name}, I'd like to book a date. The occasion is: `;
   return (
     <div className="mx-auto max-w-3xl pt-6">
       <Clapper />
@@ -29,7 +30,7 @@ export function Slate({ scene }: { scene: number }) {
           </div>
           <div className="col-span-3 border-b border-line p-5 sm:col-span-2 sm:border-b-0 sm:border-r sm:p-6">
             <dt className={fieldLabel}>Behind the camera</dt>
-            <dd className="mt-2 text-lg text-strong">{siteConfig.name}</dd>
+            <dd className="mt-2 text-lg text-strong">{site.name}</dd>
           </div>
           <div className="col-span-3 grid grid-cols-3 sm:col-span-1 sm:grid-cols-1">
             <div className="border-r border-line p-5 sm:border-b sm:border-r-0 sm:p-6">
@@ -52,7 +53,7 @@ export function Slate({ scene }: { scene: number }) {
             Send us the occasion, the date and the place. We&apos;ll tell you if we&apos;re free and what it would cost.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <SpriteButton href={whatsappUrl(message)}>
+            <SpriteButton href={whatsappUrl(contact.whatsapp, message)}>
               <WhatsAppIcon className="h-4 w-4" /> Book on WhatsApp
             </SpriteButton>
             <SpriteButton href={contact.phoneHref} variant="secondary">
@@ -73,12 +74,16 @@ export function Slate({ scene }: { scene: number }) {
               </li>
             </ul>
             <div className="flex gap-2">
-              <a href={socials.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={social}>
-                <FacebookIcon className="h-4 w-4" />
-              </a>
-              <a href={socials.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={social}>
-                <YouTubeIcon className="h-4 w-4" />
-              </a>
+              {socials.facebook && (
+                <a href={socials.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={social}>
+                  <FacebookIcon className="h-4 w-4" />
+                </a>
+              )}
+              {socials.youtube && (
+                <a href={socials.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={social}>
+                  <YouTubeIcon className="h-4 w-4" />
+                </a>
+              )}
             </div>
           </div>
         </div>

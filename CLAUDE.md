@@ -36,19 +36,25 @@ shadow rules, layout, SEO, performance, content rules, generated files), and tel
 - Blog: MDX via `next-mdx-remote/rsc` + `remark-gfm` + `rehype-slug`.
 - Fonts (`app/layout.tsx`): **Inter** (body/UI), **Cormorant Garamond** (h1/h2 only, echoes the logo's
   lettering), **Noto Sans Devanagari** for `lang="ne"` (not preloaded). All variable.
-- **No database yet.** Every feature reads through a repository interface (`features/*/domain/repositories.ts`),
-  so it can move to **Supabase** (like `../personal_website`) **without touching pages**. Planned next:
-  Supabase tables seeded from the `*.seed.ts` files, an admin dashboard, a stored enquiry form, a photo gallery.
+- **Supabase** (like `../personal_website`) holds all content, edited in the admin dashboard at `/dashboard`
+  (§11). Pages read through the repository interfaces (`features/*/domain/repositories.ts`); without the Supabase
+  env vars the repositories fall back to the static seed files / JSON / MDX, so a build never needs the database.
 
 ## 2. Structure (feature-first clean architecture)
 
 ```
 app/                         Routes ONLY: metadata + params → render a View.
-  page.tsx                   home
-  services/, services/[slug] prints/, prints/[slug] films/ (?category=, noindex), films/[slug]
-  blogs/ (?tag=, noindex), blogs/[slug]   about/ contact/ privacy/
-  sitemap.ts robots.ts manifest.ts not-found.tsx error.tsx icon.png apple-icon.png favicon.ico (generated)
-features/<feature>/domain|data|presentation   (services, prints, films, blog, home, site)
+  (site)/                    the public site (its layout holds the nav, footer and analytics; no URL prefix)
+    page.tsx                 home
+    services/, services/[slug] prints/, prints/[slug] films/ (?category= filtered in the browser), films/[slug]
+    blogs/ (?tag=, ?q= filtered in the browser), blogs/[slug]   about/ contact/ privacy/ error.tsx
+  dashboard/                 admin (noindex): login/, (protected)/ (overview, messages, settings, …)
+  api/revalidate/            refresh cache tags after direct database edits (REVALIDATE_SECRET)
+  sitemap.ts robots.ts manifest.ts not-found.tsx (brings its own chrome) icon.png apple-icon.png favicon.ico
+proxy.ts                     /dashboard only: session refresh + redirect to login
+features/<feature>/domain|data|presentation   (services, prints, films, blog, reviews, home, site, messages, dashboard)
+  site/data/settings.repository.ts   getSiteSettings(): studio name, contact, address, socials, founder, SEO
+  site/data/pages.repository.ts      per-page copy + SEO overrides     site/data/redirects.repository.ts
   services/data/services.seed.ts   the studio's services (content lives here)
   prints/data/prints.seed.ts       albums, frames, canvas, prints, photo books
   films/data/generated/            videos.json + images.json (generated, never hand-edit)
@@ -56,7 +62,9 @@ shared/domain/offering.ts          what services and prints share (name, nameNe,
 shared/components/  brand/{logo,social-icons} navigation/{floating-nav,breadcrumbs}
                     content/{offering-card,offering-article,offering-icon,inquiry-card}
                     ui/{container,sprite-button,badge,section-heading,empty-state,view-all-link} seo/json-ld
-lib/                routes.ts (EVERY internal URL) config/site.ts (name, phone, WhatsApp, email, address, socials)
+supabase/           migrations/ (schema, RLS, storage) · seeds/ (initial content, generated from the static files)
+lib/                routes.ts (EVERY internal URL) config/site.ts (site URL, time zone, defaults, whatsappUrl())
+                    supabase/{env,read-client,server,admin,client,types} cache/tags.ts media/process-image.ts
                     constants/navigation.ts seo/{metadata,breadcrumbs,structured-data} utils/ image-loader.ts
 data/films/         channel.json (channel id + extra video ids) · curation.json (hand-edited titles/categories)
 content/blog/*.mdx  one file = one post
@@ -66,7 +74,8 @@ scripts/            fetch-youtube.py · optimize-images.py
 
 Rules: pages call **repositories**, never JSON/seed files. Repositories are `server-only`. Client components
 get plain props. `@/` imports, kebab-case files, named exports (except route files). **Build links with
-`routes.*`**. Contact details come only from `siteConfig` (and `whatsappUrl()`).
+`routes.*`**. Studio details (name, phone, WhatsApp, address, socials, founder) come only from `getSiteSettings()`;
+client components get them as props. WhatsApp links: `whatsappUrl(site.contact.whatsapp, message)`.
 
 ## 3. Design system (tokens in `app/globals.css`, never raw hex in components)
 
@@ -212,9 +221,9 @@ it. The darks were lifted a step for this; don't push them back down, and don't 
   the title card (beside the "Scene 03" line on phones), its red filter glowing behind a screwed bezel, a
   halo round it and the room tinted dim red behind the line; the photos keep their own colours · 04 `#reviews` **Kind words**: `ReviewCard`s (notched corner with a gold lens-ring monogram of the
   client's initials; no avatars) in a `Carousel`; **only rendered when real reviews exist**
-  (`features/reviews/data/reviews.seed.ts`; dev shows labelled SAMPLE cards, production never) · 05
+  (the `reviews` table; dev shows labelled SAMPLE cards while it's empty, production never) · 05
   `#about` **Behind the lens**: `BehindTheLens`, the founder's portrait in the splash's viewfinder (AF
-  brackets, readouts), name, role, their own words; until `features/site/data/founder.ts` is filled it shows
+  brackets, readouts), name, role, their own words; until the founder's name is set (dashboard → Settings) it shows
   the studio (logo + true facts) · 06 `#contact` **Book a date**: `Slate`, a clapperboard (gold/black striped
   sticks; the top one rests closed and plays one quick open-and-clap, 7°, every time the slate scrolls into view;
   never left open over the page, `Clapper`) with PRODUCTION / BEHIND THE CAMERA /
@@ -291,7 +300,11 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
 - JSON-LD via `<JsonLd>`: home = `WebSite` + `LocalBusiness` (`@id` `/#studio`); contact = `LocalBusiness`;
   services/prints = `Service` (provider → `/#studio`) + `BreadcrumbList`; indexes = `ItemList`; film =
   `VideoObject`; post = `BlogPosting`. No ratings, reviews, prices or hours unless real.
-- `app/sitemap.ts` lists every canonical URL. `?category=`, `?tag=` and `?q=` views are `noindex, follow`.
+- `app/sitemap.ts` lists every canonical URL. `/films` and `/blogs` are single static pages: `?category=`, `?tag=`
+  and `?q=` are applied in the browser (`shared/components/filter/list-filter.tsx`), so every card is in the HTML and
+  the canonical is the unfiltered page (no server render or cache entry per query).
+- Search Console / Bing ownership: meta tags from Settings → Search and sharing. Per-item SEO title/description
+  overrides live on each row (`seo_title`, `seo_description`); fixed pages' overrides in the `pages` table.
 
 ## 9. Performance
 
@@ -320,3 +333,34 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
   For full-page shots use `captureBeyondViewport` with a clip; don't resize the viewport to the page height
   (the home hero is `100svh` and would stretch). Wait ~4s on / so the splash has finished.
 - Keep this file current when a convention changes.
+
+## 11. Backend (Supabase) and the dashboard
+
+- **Schema:** `supabase/migrations/0001_initial_schema.sql` (tables, RLS, storage buckets `media` + `files`),
+  content seed `supabase/seeds/0001_content.sql`. Apply with `psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f <file>`.
+  Keep `lib/supabase/types.ts` (hand-written) in step with every migration. New migrations: `0002_….sql`, never edit
+  an applied one.
+- **Access:** public pages read with the publishable key (anon: published rows only). The dashboard reads and writes
+  as the signed-in user; writes need `public.is_admin()` (a row in `public.admins`). Supabase sign-ups are open, so
+  "authenticated" alone grants nothing. Enquiries are inserted by the server with the secret key after validation,
+  honeypot, fill-time check and a per-IP-hash rate limit. Every dashboard page calls `requireAdmin()`, every
+  server action `requireAdminAction()` (actions are public endpoints).
+- **Caching (the portfolio ran out of Vercel ISR; never repeat it):** every public read is `unstable_cache(fn, [key],
+  { tags: [TAG.x] })` from `lib/cache/tags.ts` with **no `revalidate`**, and no page exports `revalidate`/`dynamic`.
+  Pages are static and rebuilt only when a dashboard save calls `updateTag(TAG.x)` (or `/api/revalidate` for direct
+  DB edits). Detail pages look up slugs in the cached list (never one cache entry per slug) and have no
+  `dynamicParams = false` (new slugs render on first visit; missing ones 404 or follow a `redirects` row).
+  `proxy.ts` matches `/dashboard` only. Filter/search views are client-side (§8).
+- **Images from the dashboard:** `ImageField` → `uploadImage` → `lib/media/process-image.ts` (sharp): 480/800/1280
+  WebP + 1200×630 JPEG + blur, unique names in the `media` bucket, a `media` row; the loader serves them like
+  `/images/*`. Never on-request resizing; never overwrite a file.
+- **Dashboard UI:** same tokens as the site (`features/dashboard/presentation/components/ui.tsx`): `Panel`,
+  `PageHeader`, `Field` + `inputClass`, `StatusBadge`, `Stat`; forms are `ActionForm` (server action returning
+  `ActionState`, `SubmitButton` = SpriteButton with a pending state); deletes are `ConfirmSubmit` (quiet red text
+  that asks first). Tabs in `dashboard-nav.tsx`; add a section to `AVAILABLE` in the protected layout when it exists.
+- **Env vars** (local: `.env.local`; production: Vercel project settings): `NEXT_PUBLIC_SITE_URL`,
+  `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only:
+  enquiries), optional `REVALIDATE_SECRET`, `CONTACT_HASH_SALT`, `RESEND_API_KEY` + `CONTACT_NOTIFICATION_TO`
+  (+ `CONTACT_NOTIFICATION_FROM`) for an email per enquiry. `SUPABASE_DB_URL` is for local psql only.
+- **Dashboard sections:** Overview, Messages, Settings (phase 1, 2026-10-01). Next: Films (+ YouTube sync), Services,
+  Prints, Blogs, Reviews, Pages (copy + SEO), Root Files, File Manager, Redirects.

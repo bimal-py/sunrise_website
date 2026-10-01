@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { siteConfig } from "@/lib/config/site";
+import type { SiteSettings } from "@/features/site/domain/entities";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { redirectOrNotFound } from "@/features/site/data/redirects.repository";
 import { routes } from "@/lib/routes";
 import { breadcrumbJsonLd, type Crumb } from "@/lib/seo/breadcrumbs";
 import { absoluteUrl } from "@/lib/seo/metadata";
@@ -18,23 +19,23 @@ import { Container } from "@/shared/components/ui/container";
 import { FilmCard } from "../components/film-card";
 import { YouTubePlayer } from "../components/youtube-player";
 
-function videoJsonLd(film: Film) {
+function videoJsonLd(film: Film, site: SiteSettings) {
   return {
     "@context": "https://schema.org",
     "@type": "VideoObject",
     name: film.title,
-    description: filmDescription(film),
+    description: filmDescription(film, site.name),
     uploadDate: film.publishedAt,
     ...(film.thumbnail ? { thumbnailUrl: [absoluteUrl(film.thumbnail.ogImage)] } : {}),
     embedUrl: film.embedUrl,
     url: absoluteUrl(routes.film(film.slug)),
-    publisher: { "@id": absoluteUrl("/#studio"), "@type": "LocalBusiness", name: siteConfig.name },
+    publisher: { "@id": absoluteUrl("/#studio"), "@type": "LocalBusiness", name: site.name },
   };
 }
 
 export async function FilmDetailPageView({ slug }: { slug: string }) {
-  const film = await filmRepository.get(slug);
-  if (!film) notFound();
+  const [film, site] = await Promise.all([filmRepository.get(slug), getSiteSettings()]);
+  if (!film) return redirectOrNotFound(routes.film(slug));
   const related = await filmRepository.listRelated(film, 3);
   const about = filmCategoryService[film.category];
 
@@ -47,7 +48,7 @@ export async function FilmDetailPageView({ slug }: { slug: string }) {
   return (
     <main>
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
-      <JsonLd data={videoJsonLd(film)} />
+      <JsonLd data={videoJsonLd(film, site)} />
       <Container narrow className="pt-8 pb-20">
         <Breadcrumbs crumbs={crumbs} />
 
@@ -65,7 +66,7 @@ export async function FilmDetailPageView({ slug }: { slug: string }) {
             </div>
 
             <div className="prose-article mt-8">
-              <p>{filmDescription(film)}</p>
+              <p>{filmDescription(film, site.name)}</p>
               <p>
                 We photograph and film {about.serviceName} across Syangja. See what&apos;s included on our{" "}
                 <Link href={routes.service(about.service)}>{about.serviceName}</Link> page, or browse more{" "}
@@ -85,7 +86,7 @@ export async function FilmDetailPageView({ slug }: { slug: string }) {
 
           <InquiryCard
             title="Want a film like this?"
-            message={`Hello ${siteConfig.name}, I watched "${film.title}" on your website and I'd like to ask about booking. Our date is: `}
+            message={`Hello ${site.name}, I watched "${film.title}" on your website and I'd like to ask about booking. Our date is: `}
           />
         </div>
 

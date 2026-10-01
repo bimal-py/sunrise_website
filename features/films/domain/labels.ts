@@ -1,4 +1,3 @@
-import { siteConfig } from "@/lib/config/site";
 import type { Film, FilmCategory } from "./entities";
 
 /** Which service page a film belongs to, and how to describe it in a sentence. */
@@ -9,7 +8,7 @@ export const filmCategoryService: Record<FilmCategory, { service: string; servic
 };
 
 /** One-sentence description for the film page and its meta description. */
-export function filmDescription(film: Film): string {
+export function filmDescription(film: Film, studioName: string): string {
   const where = film.place ? ` in ${film.place}, Syangja` : "";
-  return `${film.title}: ${filmCategoryService[film.category].kind} filmed by ${siteConfig.name}${where}. Watch the film here or on our YouTube channel.`;
+  return `${film.title}: ${filmCategoryService[film.category].kind} filmed by ${studioName}${where}. Watch the film here or on our YouTube channel.`;
 }

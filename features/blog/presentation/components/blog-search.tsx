@@ -4,19 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { routes } from "@/lib/routes";
+import { setListFilter, useListFilter } from "@/shared/components/filter/list-filter";
 
 /**
- * Live search for the blog: the list filters a moment after you stop typing
- * (at once on Enter) and keeps the chosen topic. The results render on the
- * server from ?q=; without JavaScript the form submits to the same URL.
+ * Live search for the blog: the list filters as you type (in the browser, over the
+ * static page) and the URL follows a moment later (?q=, keeping the topic), so a search
+ * can be shared. Without JavaScript the form submits to the same URL.
  */
-export function BlogSearch({ q = "", tag }: { q?: string; tag?: string }) {
+export function BlogSearch() {
   const router = useRouter();
+  const { q, tag } = useListFilter();
   const [value, setValue] = useState(q);
   const timer = useRef(0);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  // The URL changed from elsewhere ("Clear filters"): show its words, not the stale ones.
+  // The URL changed from elsewhere (a topic chip, "clear the filters"): show its words.
   const [seen, setSeen] = useState(q);
   if (q !== seen) {
     setSeen(q);
@@ -47,6 +49,7 @@ export function BlogSearch({ q = "", tag }: { q?: string; tag?: string }) {
         onChange={(event) => {
           const words = event.target.value;
           setValue(words);
+          setListFilter({ q: words.trim() });
           window.clearTimeout(timer.current);
           timer.current = window.setTimeout(() => go(words), 350);
         }}

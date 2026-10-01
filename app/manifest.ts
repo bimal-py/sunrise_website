@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
-import { siteConfig } from "@/lib/config/site";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const site = await getSiteSettings();
   return {
-    name: siteConfig.name,
+    name: site.name,
     short_name: "Sunrise Studio",
-    description: siteConfig.description,
+    description: site.description,
     start_url: "/",
     display: "standalone",
     background_color: "#101011",

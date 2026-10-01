@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/config/site";
+import { siteUrl } from "@/lib/config/site";
+import type { PageKey } from "@/lib/supabase/types";
+import { getPage } from "@/features/site/data/pages.repository";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
 
 /** 1200×630 share image for pages without their own (built by scripts/optimize-images.py). */
 export const defaultOgImage = "/brand/og-default.jpg";
 
 export function absoluteUrl(path = "/") {
-  return new URL(path, siteConfig.url).toString();
+  return new URL(path, siteUrl).toString();
 }
 
 type PageMetadataInput = {
@@ -14,26 +17,31 @@ type PageMetadataInput = {
   path: string;
   image?: string | null;
   noindex?: boolean;
+  /** A fixed page whose SEO fields (dashboard → Pages) override the title, description and image. */
+  page?: PageKey;
 };
 
 /** Metadata for an ordinary page: canonical, Open Graph and Twitter in one place. */
-export function buildPageMetadata({ title, description, path, image, noindex }: PageMetadataInput): Metadata {
+export async function buildPageMetadata({ title, description, path, image, noindex, page }: PageMetadataInput): Promise<Metadata> {
+  const [site, override] = await Promise.all([getSiteSettings(), page ? getPage(page) : null]);
+  const finalTitle = override?.seoTitle || title;
+  const finalDescription = override?.seoDescription || description;
   // Share images are 1200×630 (the size Facebook, WhatsApp, X and LinkedIn expect).
-  const ogImage = { url: image ?? defaultOgImage, width: 1200, height: 630 };
+  const ogImage = { url: override?.ogImage?.ogImage ?? image ?? site.seo.ogImage?.ogImage ?? defaultOgImage, width: 1200, height: 630 };
   return {
-    title,
-    description,
+    title: finalTitle,
+    description: finalDescription,
     alternates: { canonical: absoluteUrl(path) },
     openGraph: {
-      title,
-      description,
+      title: finalTitle,
+      description: finalDescription,
       type: "website",
       url: absoluteUrl(path),
-      siteName: siteConfig.name,
-      locale: siteConfig.locale,
+      siteName: site.name,
+      locale: site.locale,
       images: [ogImage],
     },
-    twitter: { card: "summary_large_image", title, description, images: [ogImage.url] },
+    twitter: { card: "summary_large_image", title: finalTitle, description: finalDescription, images: [ogImage.url] },
     ...(noindex ? { robots: { index: false, follow: true } } : {}),
   };
 }
@@ -45,8 +53,8 @@ type ArticleMetadataInput = PageMetadataInput & {
   keywords?: string[];
 };
 
-export function buildArticleMetadata(input: ArticleMetadataInput): Metadata {
-  const base = buildPageMetadata(input);
+export async function buildArticleMetadata(input: ArticleMetadataInput): Promise<Metadata> {
+  const base = await buildPageMetadata(input);
   return {
     ...base,
     keywords: input.keywords,

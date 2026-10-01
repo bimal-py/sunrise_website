@@ -156,6 +156,11 @@
     cursor: pointer;
     transition: border-color 0.3s ease;
   }
+  /* While a form is sending: dimmed, no pointer. */
+  .sprite-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
   /* Compact on phones (8px × 16px), e.g. the hero's secondary action. */
   @media (max-width: 639px) {
     .sprite-btn.sprite-btn-compact { height: auto; }

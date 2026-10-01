@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { siteConfig } from "@/lib/config/site";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
 import { routes } from "@/lib/routes";
 import { filmRepository } from "@/features/films/data/films.repository";
 import { printRepository } from "@/features/prints/data/prints.repository";
@@ -9,17 +9,18 @@ import { Container } from "@/shared/components/ui/container";
 import { SectionHeading } from "@/shared/components/ui/section-heading";
 
 export async function AboutPageView() {
+  const site = await getSiteSettings();
   const [services, prints, films] = await Promise.all([serviceRepository.list(), printRepository.list(), filmRepository.list()]);
   const firstYear = films.at(-1)?.publishedAt.slice(0, 4);
 
   return (
     <main>
       <Container narrow className="pt-10 pb-20">
-        <SectionHeading as="h1" eyebrow="About" title={`About ${siteConfig.name}`} titleNe={siteConfig.nameNe} />
+        <SectionHeading as="h1" eyebrow="About" title={`About ${site.name}`} titleNe={site.nameNe} />
         <div className="grid gap-10 lg:grid-cols-[1.6fr_1fr]">
           <div className="prose-article">
             <p className="text-lg">
-              <strong>{siteConfig.name}</strong> is a photo and film studio in Arjunchaupari, Syangja. We photograph and film
+              <strong>{site.name}</strong> is a photo and film studio in Arjunchaupari, Syangja. We photograph and film
               weddings, pasni, bratabandha, pujas and cultural programmes across the district, from Arjunchaupari to Panchamul,
               Walling and Tirasi, and we print what we shoot: albums, frames, canvas prints and everyday photos.
             </p>
@@ -54,11 +55,11 @@ export async function AboutPageView() {
             <p>
               {firstYear ? `We've been publishing our films on YouTube since ${firstYear}. ` : ""}
               Watch them on our <Link href={routes.films()}>films page</Link> or on our{" "}
-              <a href={siteConfig.social.youtube}>YouTube channel</a>, and follow new work on our{" "}
-              <a href={siteConfig.social.facebook}>Facebook page</a>.
+              <a href={site.social.youtube}>YouTube channel</a>, and follow new work on our{" "}
+              <a href={site.social.facebook}>Facebook page</a>.
             </p>
           </div>
-          <InquiryCard title="Visit or get in touch" message={`Hello ${siteConfig.name}, I'd like to ask about `} note={`${siteConfig.address.line}. WhatsApp is the quickest way to reach us.`} />
+          <InquiryCard title="Visit or get in touch" message={`Hello ${site.name}, I'd like to ask about `} note={`${site.address.line}. WhatsApp is the quickest way to reach us.`} />
         </div>
       </Container>
     </main>

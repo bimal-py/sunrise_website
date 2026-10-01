@@ -1,85 +1,123 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { Mail } from "lucide-react";
-import { siteConfig, whatsappUrl } from "@/lib/config/site";
+import { useActionState, useEffect, useRef } from "react";
+import { useFormStatus } from "react-dom";
+import { CircleCheck } from "lucide-react";
+import { whatsappUrl } from "@/lib/config/site";
+import { occasions } from "@/features/messages/domain/entities";
+import { submitEnquiry, type EnquiryState } from "@/features/messages/presentation/actions/enquiry";
 import { WhatsAppIcon } from "@/shared/components/brand/social-icons";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 
-const occasions = [
-  "Wedding",
-  "Pre-wedding shoot",
-  "Pasni, bratabandha or puja",
-  "Studio portraits",
-  "Event or programme",
-  "Album, frame or prints",
-  "Passport or ID photos",
-  "Something else",
-];
-
-const field = "h-11 w-full rounded-control border border-line-strong bg-raised px-3 text-[15px] text-strong placeholder:text-muted/70 focus:border-primary focus:outline-none";
+const field = "h-11 w-full rounded-control border border-line-strong bg-raised px-3 text-[15px] text-strong placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error";
 const label = "mb-2 block text-sm font-medium text-strong";
+const initial: EnquiryState = { status: "idle" };
+
+function SendButton() {
+  const { pending } = useFormStatus();
+  return (
+    <SpriteButton type="submit" disabled={pending}>
+      {pending ? "Sending…" : "Send enquiry"}
+    </SpriteButton>
+  );
+}
+
+function FieldError({ id, error }: { id: string; error?: string }) {
+  return error ? (
+    <p id={id} className="mt-1.5 text-sm text-error">
+      {error}
+    </p>
+  ) : null;
+}
 
 /**
- * Booking enquiry. Nothing is stored or sent by the site: submitting opens
- * WhatsApp (or the visitor's email app) with the message written out, and the
- * visitor sends it themselves. Replace with a Supabase-backed form later.
+ * Booking enquiry: saved for the studio (dashboard → Messages) through a server action,
+ * so it works without JavaScript too. WhatsApp stays one tap away, before and after.
  */
-export function BookingForm() {
-  const [values, setValues] = useState({ name: "", occasion: occasions[0], date: "", place: "", message: "" });
-  const set = (key: keyof typeof values) => (event: { target: { value: string } }) => setValues((v) => ({ ...v, [key]: event.target.value }));
+export function BookingForm({ studioName, whatsapp }: { studioName: string; whatsapp: string }) {
+  const [state, action] = useActionState(submitEnquiry, initial);
+  const startedAt = useRef<HTMLInputElement>(null);
+  // When the visitor started filling the form in: a bot posting instantly is ignored.
+  useEffect(() => {
+    if (startedAt.current) startedAt.current.value = String(Date.now());
+  }, [state]);
 
-  const text = [
-    `Hello ${siteConfig.name},`,
-    `I'd like to ask about: ${values.occasion}.`,
-    values.date && `Date: ${values.date}`,
-    values.place && `Place: ${values.place}`,
-    values.message,
-    values.name && `- ${values.name}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const v = state.values ?? {};
+  const errors = state.fieldErrors ?? {};
+  const chat = whatsapp ? whatsappUrl(whatsapp, `Hello ${studioName}, I'd like to ask about booking.`) : "";
 
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    window.open(whatsappUrl(text), "_blank", "noopener,noreferrer");
-  };
-
-  const mailto = `mailto:${siteConfig.contact.email}?subject=${encodeURIComponent(`Enquiry: ${values.occasion}`)}&body=${encodeURIComponent(text)}`;
+  if (state.status === "success") {
+    return (
+      <div className="rounded-panel border border-line bg-surface p-6 sm:p-8" role="status">
+        <CircleCheck className="h-8 w-8 text-primary" aria-hidden />
+        <h2 className="mt-4 text-[30px]">Thank you, we&apos;ve got your message</h2>
+        <p className="mt-2 text-muted">We&apos;ll reply on WhatsApp or by phone, usually the same day. If it&apos;s urgent, message us now as well.</p>
+        {chat && (
+          <div className="mt-6">
+            <SpriteButton href={chat} variant="secondary">
+              <WhatsAppIcon className="h-4 w-4" /> Message us on WhatsApp
+            </SpriteButton>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-panel border border-line bg-surface p-6 sm:p-8">
+    <form action={action} noValidate className="rounded-panel border border-line bg-surface p-6 sm:p-8">
       <h2 className="text-[30px]">Send an enquiry</h2>
-      <p className="mt-2 text-sm text-muted">Fill this in and it opens WhatsApp with your message written out. Nothing is saved on this website.</p>
+      <p className="mt-2 text-sm text-muted">Tell us the occasion, the date and the place. We&apos;ll reply on WhatsApp or by phone.</p>
+
+      {/* Bots fill in every field; people never see this one. */}
+      <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label htmlFor="bf-company">Company</label>
+        <input id="bf-company" name="company" tabIndex={-1} autoComplete="off" />
+      </div>
+      <input ref={startedAt} type="hidden" name="startedAt" />
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="bf-name" className={label}>
             Your name
           </label>
-          <input id="bf-name" name="name" autoComplete="name" value={values.name} onChange={set("name")} className={field} />
+          <input id="bf-name" name="name" autoComplete="name" required maxLength={100} defaultValue={v.name} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "bf-name-error" : undefined} className={field} />
+          <FieldError id="bf-name-error" error={errors.name} />
+        </div>
+        <div>
+          <label htmlFor="bf-phone" className={label}>
+            Phone or WhatsApp
+          </label>
+          <input id="bf-phone" name="phone" type="tel" autoComplete="tel" required maxLength={40} placeholder="98XXXXXXXX" defaultValue={v.phone} aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? "bf-phone-error" : undefined} className={field} />
+          <FieldError id="bf-phone-error" error={errors.phone} />
         </div>
         <div>
           <label htmlFor="bf-occasion" className={label}>
             What for
           </label>
-          <select id="bf-occasion" name="occasion" value={values.occasion} onChange={set("occasion")} className={field}>
+          <select id="bf-occasion" name="occasion" defaultValue={v.occasion ?? occasions[0]} className={field}>
             {occasions.map((occasion) => (
               <option key={occasion}>{occasion}</option>
             ))}
           </select>
         </div>
         <div>
+          <label htmlFor="bf-email" className={label}>
+            Email <span className="font-normal text-muted">(optional)</span>
+          </label>
+          <input id="bf-email" name="email" type="email" autoComplete="email" maxLength={200} defaultValue={v.email} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "bf-email-error" : undefined} className={field} />
+          <FieldError id="bf-email-error" error={errors.email} />
+        </div>
+        <div>
           <label htmlFor="bf-date" className={label}>
             Date <span className="font-normal text-muted">(if you know it)</span>
           </label>
-          <input id="bf-date" name="date" placeholder="e.g. 12 Mangsir" value={values.date} onChange={set("date")} className={field} />
+          <input id="bf-date" name="date" maxLength={60} placeholder="e.g. 12 Mangsir" defaultValue={v.date} className={field} />
         </div>
         <div>
           <label htmlFor="bf-place" className={label}>
             Place or venue
           </label>
-          <input id="bf-place" name="place" placeholder="e.g. Panchamul" value={values.place} onChange={set("place")} className={field} />
+          <input id="bf-place" name="place" maxLength={120} placeholder="e.g. Panchamul" defaultValue={v.place} className={field} />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="bf-message" className={label}>
@@ -89,22 +127,29 @@ export function BookingForm() {
             id="bf-message"
             name="message"
             rows={4}
+            maxLength={2000}
             placeholder="Photos, a film or both? Both sides of the wedding? An album?"
-            value={values.message}
-            onChange={set("message")}
+            defaultValue={v.message}
             className={`${field} h-auto py-2.5`}
           />
         </div>
       </div>
 
+      {state.status === "error" && state.message && (
+        <p className="mt-5 text-sm text-error" role="alert">
+          {state.message}
+        </p>
+      )}
+
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <SpriteButton type="submit">
-          <WhatsAppIcon className="h-4 w-4" /> Send on WhatsApp
-        </SpriteButton>
-        <SpriteButton href={mailto} variant="secondary">
-          <Mail className="h-4 w-4" aria-hidden /> Send by email instead
-        </SpriteButton>
+        <SendButton />
+        {chat && (
+          <SpriteButton href={chat} variant="secondary">
+            <WhatsAppIcon className="h-4 w-4" /> WhatsApp us instead
+          </SpriteButton>
+        )}
       </div>
+      <p className="mt-4 text-xs text-muted">We keep your message only to reply to you. See our privacy notice.</p>
     </form>
   );
 }

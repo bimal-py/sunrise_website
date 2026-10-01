@@ -1,7 +1,6 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { siteConfig } from "@/lib/config/site";
 import { SunriseMark } from "@/shared/components/brand/sunrise-mark";
 
 /** When the shutter fires: the drawing, focus lock and counter are done (globals.css "Splash" timeline). */
@@ -49,7 +48,7 @@ const afCorner = "absolute h-4 w-4 border-current sm:h-5 sm:w-5";
  * Plays on every full load of the home page; clicking Home from another page
  * doesn't replay it. A tap or key press skips it. Reduced motion hides it in CSS.
  */
-export function SplashScreen({ heroMarkSelector }: { heroMarkSelector: string }) {
+export function SplashScreen({ heroMarkSelector, tagline, signature }: { heroMarkSelector: string; tagline: string; signature: string }) {
   const ref = useRef<HTMLDivElement>(null);
   // Decided once per mount: React dev (Strict Mode) runs effects twice, and the
   // second run would otherwise see playedThisPageLoad set by the first.
@@ -180,15 +179,13 @@ export function SplashScreen({ heroMarkSelector }: { heroMarkSelector: string })
           className="splash-fade absolute inset-x-8 bottom-[15%] text-center font-mono text-xs text-foreground md:bottom-[14%]"
           style={{ ["--d" as string]: "1000ms" }}
         >
-          Photos and films for the days you&apos;ll want to relive.
+          {/[.!?]$/.test(tagline) ? tagline : `${tagline}.`}
         </p>
       </div>
 
       {/* Status row: the counter runs while the camera is "capturing"; gone with the viewfinder when the shutter closes. */}
       <div className="splash-viewfinder absolute inset-x-8 bottom-8 flex justify-between font-mono text-[11px] text-muted md:inset-x-16 md:bottom-16 md:text-xs">
-        <span>
-          {siteConfig.name}, {siteConfig.address.district}
-        </span>
+        <span>{signature}</span>
         <span>
           Capturing <span className="splash-count tabular-nums text-strong" />
         </span>

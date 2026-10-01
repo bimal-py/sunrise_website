@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Mail, MapPin, Phone } from "lucide-react";
-import { siteConfig, whatsappUrl } from "@/lib/config/site";
+import { whatsappUrl } from "@/lib/config/site";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
 import { localBusinessJsonLd } from "@/lib/seo/structured-data";
 import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
 import { JsonLd } from "@/shared/components/seo/json-ld";
@@ -10,19 +11,20 @@ import { BookingForm } from "../components/booking-form";
 
 type Channel = { icon: ReactNode; label: string; value: string; href: string; external?: boolean };
 
-export function ContactPageView() {
-  const { contact, address, social } = siteConfig;
+export async function ContactPageView() {
+  const site = await getSiteSettings();
+  const { contact, address, social } = site;
   const channels: Channel[] = [
-    { icon: <WhatsAppIcon className="h-5 w-5" />, label: "WhatsApp", value: contact.whatsappDisplay, href: whatsappUrl(), external: true },
+    { icon: <WhatsAppIcon className="h-5 w-5" />, label: "WhatsApp", value: contact.whatsappDisplay, href: whatsappUrl(contact.whatsapp), external: true },
     { icon: <Phone className="h-5 w-5" aria-hidden />, label: "Call", value: contact.phone, href: contact.phoneHref },
     { icon: <Mail className="h-5 w-5" aria-hidden />, label: "Email", value: contact.email, href: `mailto:${contact.email}` },
-    { icon: <FacebookIcon className="h-5 w-5" />, label: "Facebook", value: "Sunrise Photo Studio", href: social.facebook, external: true },
+    { icon: <FacebookIcon className="h-5 w-5" />, label: "Facebook", value: site.name, href: social.facebook, external: true },
     { icon: <YouTubeIcon className="h-5 w-5" />, label: "YouTube", value: "Our films", href: social.youtube, external: true },
-  ];
+  ].filter((channel) => channel.href && channel.value);
 
   return (
     <main>
-      <JsonLd data={localBusinessJsonLd()} />
+      <JsonLd data={localBusinessJsonLd(site)} />
       <Container className="pt-10 pb-20">
         <SectionHeading
           as="h1"
@@ -78,7 +80,7 @@ export function ContactPageView() {
           </div>
 
           <div className="min-w-0">
-            <BookingForm />
+            <BookingForm studioName={site.name} whatsapp={contact.whatsapp} />
             <section aria-labelledby="include-heading" className="mt-8">
               <h2 id="include-heading" className="font-sans text-base font-semibold">
                 What to include in your message

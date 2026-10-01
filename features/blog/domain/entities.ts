@@ -36,6 +36,9 @@ export type BlogPostPreview = {
   coverImage: BlogCoverImage | null;
   readingTimeMinutes: number;
   featured: boolean;
+  /** Dashboard SEO overrides; empty = the title and summary. */
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type BlogHeading = { id: string; text: string; depth: 2 | 3 };

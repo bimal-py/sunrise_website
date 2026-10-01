@@ -1,3 +1,5 @@
+import type { ImageAsset } from "@/shared/domain/image";
+
 /**
  * What services (weddings, pasni, portraits…) and prints (albums, frames…) have
  * in common: a named offering with a detail page, written content and an
@@ -44,4 +46,11 @@ export type Offering = {
   inquiry: string;
   /** schema.org serviceType. */
   serviceType: string;
+  /** Dashboard SEO overrides; empty = the generated title and summary. */
+  seoTitle?: string;
+  seoDescription?: string;
+  /** 1200×630 share image (else the page's photo, else the studio's). */
+  ogImage?: ImageAsset | null;
+  /** When the page last changed (sitemap lastmod). */
+  updatedAt?: string | null;
 };

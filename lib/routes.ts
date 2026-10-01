@@ -30,4 +30,12 @@ export const routes = {
   about: () => "/about",
   contact: () => "/contact",
   privacy: () => "/privacy",
+
+  // Dashboard (admin only, noindex)
+  dashboard: () => "/dashboard",
+  dashboardLogin: () => "/dashboard/login",
+  dashboardMessages: (status?: string) => (status ? `/dashboard/messages?status=${status}` : "/dashboard/messages"),
+  dashboardSection: (section: string) => `/dashboard/${section}`,
+  dashboardItem: (section: string, id: string) => `/dashboard/${section}/${encodeURIComponent(id)}`,
+  dashboardNew: (section: string) => `/dashboard/${section}/new`,
 };

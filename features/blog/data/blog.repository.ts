@@ -1,83 +1,89 @@
 import "server-only";
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { compileMDX } from "next-mdx-remote/rsc";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
-import { siteConfig } from "@/lib/config/site";
-import type { BlogCoverImage, BlogPost, BlogPostPreview } from "@/features/blog/domain/entities";
+import { TAG } from "@/lib/cache/tags";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { readClient } from "@/lib/supabase/read-client";
+import type { PostRow } from "@/lib/supabase/types";
+import type { BlogHeading, BlogPost, BlogPostPreview } from "@/features/blog/domain/entities";
 import type { BlogRepository } from "@/features/blog/domain/repositories";
 import { mdxComponents } from "@/features/blog/presentation/components/mdx-components";
-import { extractHeadings, readingTime, tagSlug } from "./blog.utils";
-import type { BlogFrontmatter } from "./dto";
-import coverImages from "./generated/images.json";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { getStaticPost, listStaticPosts } from "./blog.static";
+import { tagSlug } from "./blog.utils";
 
-const POSTS_DIR = path.join(process.cwd(), "content/blog");
+const PREVIEW_COLUMNS =
+  "slug, title, summary, published_at, updated_on, author, tags, language, featured, cover, cover_alt, cover_credit, cover_credit_url, cover_license, cover_license_url, reading_minutes, seo_title, seo_description";
 
-/** Cover photo from frontmatter + the size/blur data scripts/optimize-images.py generated. */
-function cover(frontmatter: BlogFrontmatter): BlogCoverImage | null {
-  const name = frontmatter.cover?.match(/^\/images\/blog\/([a-z0-9-]+)\.webp$/)?.[1];
-  if (!name) return null;
-  const built = (coverImages as Record<string, { width: number; height: number; blurDataURL: string }>)[name];
-  if (!built) throw new Error(`Cover "${name}" hasn't been built. Add it to assets/images/blog/ and run scripts/optimize-images.py.`);
+type PreviewRow = Pick<
+  PostRow,
+  | "slug" | "title" | "summary" | "published_at" | "updated_on" | "author" | "tags" | "language" | "featured" | "cover"
+  | "cover_alt" | "cover_credit" | "cover_credit_url" | "cover_license" | "cover_license_url" | "reading_minutes"
+  | "seo_title" | "seo_description"
+>;
+
+export function rowToPreview(row: PreviewRow, studioName: string): BlogPostPreview {
   return {
-    src: frontmatter.cover!,
-    alt: frontmatter.coverAlt ?? "",
-    width: built.width,
-    height: built.height,
-    blurDataURL: built.blurDataURL,
-    ogImage: `/images/blog/og/${name}.jpg`,
-    credit: frontmatter.coverCredit ?? "",
-    creditUrl: frontmatter.coverCreditUrl ?? "",
-    license: frontmatter.coverLicense ?? "",
-    licenseUrl: frontmatter.coverLicenseUrl ?? "",
+    slug: row.slug,
+    title: row.title,
+    summary: row.summary,
+    publishedAt: row.published_at ?? "",
+    updatedAt: row.updated_on,
+    author: row.author || studioName,
+    tags: row.tags,
+    language: row.language,
+    coverImage: row.cover
+      ? {
+          ...row.cover,
+          alt: row.cover_alt,
+          credit: row.cover_credit,
+          creditUrl: row.cover_credit_url,
+          license: row.cover_license,
+          licenseUrl: row.cover_license_url,
+        }
+      : null,
+    readingTimeMinutes: row.reading_minutes,
+    featured: row.featured,
+    seoTitle: row.seo_title,
+    seoDescription: row.seo_description,
   };
 }
 
-async function compile(slug: string) {
-  const source = await readFile(path.join(POSTS_DIR, `${slug}.mdx`), "utf8").catch(() => null);
-  if (source === null) return null;
+// Every published post without its body, one entry tagged "posts", no timer.
+const loadPreviews = unstable_cache(
+  async (): Promise<PreviewRow[]> => {
+    const { data, error } = await readClient()
+      .from("posts")
+      .select(PREVIEW_COLUMNS)
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .order("featured", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(`posts: ${error.message}`);
+    return data;
+  },
+  ["posts:previews"],
+  { tags: [TAG.posts] },
+);
 
-  const { frontmatter, content } = await compileMDX<BlogFrontmatter>({
-    source,
-    components: mdxComponents,
-    options: {
-      parseFrontmatter: true,
-      mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins: [rehypeSlug] },
-    },
-  });
-  if (frontmatter.draft) return null;
-
-  const preview: BlogPostPreview = {
-    slug,
-    title: frontmatter.title,
-    summary: frontmatter.summary,
-    publishedAt: String(frontmatter.publishedAt),
-    updatedAt: frontmatter.updatedAt ? String(frontmatter.updatedAt) : null,
-    author: frontmatter.author ?? siteConfig.name,
-    tags: frontmatter.tags ?? [],
-    language: frontmatter.language ?? "en",
-    coverImage: cover(frontmatter),
-
-    readingTimeMinutes: readingTime(source),
-    featured: frontmatter.featured ?? false,
-  };
-  return { preview, content, headings: extractHeadings(source) };
-}
-
-/** Per-request memo: the list and a detail page share one compile per post. */
-const compileCached = cache(compile);
+// A post's body; only ever called for slugs that exist (checked against the previews).
+const loadBody = unstable_cache(
+  async (slug: string): Promise<{ body: string; headings: BlogHeading[] } | null> => {
+    const { data, error } = await readClient().from("posts").select("body, headings").eq("slug", slug).eq("status", "published").maybeSingle();
+    if (error) throw new Error(`posts/${slug}: ${error.message}`);
+    return data;
+  },
+  ["posts:body"],
+  { tags: [TAG.posts] },
+);
 
 const listAll = cache(async (): Promise<BlogPostPreview[]> => {
-  const files = await readdir(POSTS_DIR).catch(() => [] as string[]);
-  const posts = await Promise.all(
-    files.filter((file) => file.endsWith(".mdx")).map((file) => compileCached(file.replace(/\.mdx$/, ""))),
-  );
-  return posts
-    .filter((post) => post !== null)
-    .map((post) => post.preview)
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || Number(b.featured) - Number(a.featured));
+  if (!isSupabaseConfigured) return listStaticPosts();
+  const [rows, site] = await Promise.all([loadPreviews(), getSiteSettings()]);
+  return rows.map((row) => rowToPreview(row, site.name));
 });
 
 /** Every word of the query (case-insensitive) appears in the post's title, summary or tags. */
@@ -110,9 +116,18 @@ export const blogRepository: BlogRepository = {
   },
 
   async getPost(slug): Promise<BlogPost | null> {
-    if (!/^[a-z0-9-]+$/.test(slug)) return null; // never touch the filesystem with odd input
-    const post = await compileCached(slug);
-    return post ? { ...post.preview, headings: post.headings, content: post.content } : null;
+    if (!/^[a-z0-9-]+$/.test(slug)) return null;
+    if (!isSupabaseConfigured) return getStaticPost(slug);
+    const preview = (await listAll()).find((post) => post.slug === slug);
+    if (!preview) return null;
+    const stored = await loadBody(slug);
+    if (!stored) return null;
+    const { content } = await compileMDX({
+      source: stored.body,
+      components: mdxComponents,
+      options: { mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins: [rehypeSlug] } },
+    });
+    return { ...preview, headings: stored.headings, content };
   },
 
   async listTags() {

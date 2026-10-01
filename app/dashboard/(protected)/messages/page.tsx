@@ -1,0 +1,155 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Mail, Phone } from "lucide-react";
+import { whatsappUrl } from "@/lib/config/site";
+import { routes } from "@/lib/routes";
+import type { MessageStatus } from "@/lib/supabase/types";
+import { formatDateTime } from "@/lib/utils/date";
+import { toWhatsappNumber } from "@/lib/utils/phone";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { requireAdmin } from "@/features/dashboard/data/auth";
+import { ConfirmSubmit } from "@/features/dashboard/presentation/components/form-controls";
+import { PageHeader, StatusBadge } from "@/features/dashboard/presentation/components/ui";
+import { deleteMessage, markAllRead, setMessageStatus } from "@/features/messages/presentation/actions/manage";
+import { WhatsAppIcon } from "@/shared/components/brand/social-icons";
+import { EmptyState } from "@/shared/components/ui/empty-state";
+
+export const metadata: Metadata = { title: "Messages" };
+
+const VIEWS = [
+  { id: "inbox", label: "Inbox" },
+  { id: "new", label: "New" },
+  { id: "replied", label: "Replied" },
+  { id: "archived", label: "Archived" },
+] as const;
+type View = (typeof VIEWS)[number]["id"];
+
+const badge: Record<MessageStatus, { tone: "gold" | "green" | "muted"; label: string }> = {
+  new: { tone: "gold", label: "New" },
+  read: { tone: "muted", label: "Read" },
+  replied: { tone: "green", label: "Replied" },
+  archived: { tone: "muted", label: "Archived" },
+};
+
+const chip = "inline-flex h-9 items-center rounded-control border px-3 text-sm transition-colors duration-150";
+const action = "inline-flex min-h-8 items-center text-sm text-muted underline-offset-4 transition-colors duration-150 hover:text-strong hover:underline";
+
+type PageProps = { searchParams: Promise<{ status?: string }> };
+
+export default async function MessagesPage({ searchParams }: PageProps) {
+  const { status } = await searchParams;
+  const view: View = VIEWS.some((v) => v.id === status) ? (status as View) : "inbox";
+  const { supabase } = await requireAdmin();
+
+  let query = supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(200);
+  query = view === "inbox" ? query.neq("status", "archived") : query.eq("status", view);
+  const [{ data: messages, error }, site] = await Promise.all([query, getSiteSettings()]);
+  if (error) throw new Error(`Couldn't load messages: ${error.message}`);
+  const hasNew = messages.some((m) => m.status === "new");
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Messages"
+        title="Enquiries"
+        description="Sent from the contact page's form. Reply on WhatsApp or by phone, then mark the message replied."
+        actions={
+          hasNew ? (
+            <form action={markAllRead}>
+              <button type="submit" className="inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-strong">
+                Mark all as read
+              </button>
+            </form>
+          ) : undefined
+        }
+      />
+
+      <nav aria-label="Message folders" className="mb-6 flex flex-wrap gap-2">
+        {VIEWS.map((v) => (
+          <Link
+            key={v.id}
+            href={v.id === "inbox" ? routes.dashboardMessages() : routes.dashboardMessages(v.id)}
+            aria-current={view === v.id ? "page" : undefined}
+            className={`${chip} ${view === v.id ? "border-primary bg-primary-soft text-strong" : "border-line-strong text-foreground hover:border-primary"}`}
+          >
+            {v.label}
+          </Link>
+        ))}
+      </nav>
+
+      {messages.length === 0 ? (
+        <EmptyState title={view === "inbox" ? "No messages yet" : "Nothing here"}>
+          {view === "inbox" ? "When someone sends the form on the contact page, it appears here." : "Messages you move here will show up in this folder."}
+        </EmptyState>
+      ) : (
+        <ul className="flex flex-col gap-4">
+          {messages.map((m) => {
+            const wa = toWhatsappNumber(m.phone);
+            const greeting = `Hello ${m.name}, this is ${site.name}. Thank you for your message${m.occasion ? ` about ${m.occasion.toLowerCase()}` : ""}.`;
+            return (
+              <li key={m.id} className={`rounded-panel border bg-surface p-5 sm:p-6 ${m.status === "new" ? "border-primary/50" : "border-line"}`}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold text-strong">{m.name}</p>
+                    <p className="mt-0.5 text-sm text-muted">
+                      {[m.occasion, m.event_date && `Date: ${m.event_date}`, m.place && `Place: ${m.place}`].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge tone={badge[m.status].tone}>{badge[m.status].label}</StatusBadge>
+                    <time dateTime={m.created_at} className="font-mono text-xs text-muted">
+                      {formatDateTime(m.created_at)}
+                    </time>
+                  </div>
+                </div>
+
+                {m.message && <p className="mt-4 whitespace-pre-wrap text-foreground">{m.message}</p>}
+
+                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                  {wa && (
+                    <a href={whatsappUrl(wa, greeting)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1.5 text-primary hover:text-primary-strong">
+                      <WhatsAppIcon className="h-4 w-4" /> Reply on WhatsApp
+                    </a>
+                  )}
+                  {m.phone && (
+                    <a href={`tel:${m.phone.replace(/[^\d+]/g, "")}`} className="inline-flex min-h-8 items-center gap-1.5 text-primary hover:text-primary-strong">
+                      <Phone className="h-4 w-4" aria-hidden /> {m.phone}
+                    </a>
+                  )}
+                  {m.email && (
+                    <a href={`mailto:${m.email}?subject=${encodeURIComponent(`Your enquiry to ${site.name}`)}`} className="inline-flex min-h-8 items-center gap-1.5 break-all text-primary hover:text-primary-strong">
+                      <Mail className="h-4 w-4" aria-hidden /> {m.email}
+                    </a>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-line pt-3">
+                  {(
+                    [
+                      m.status === "new" && { status: "read", label: "Mark read" },
+                      m.status !== "replied" && m.status !== "archived" && { status: "replied", label: "Mark replied" },
+                      m.status !== "archived" && { status: "archived", label: "Archive" },
+                      m.status === "archived" && { status: "read", label: "Back to inbox" },
+                    ].filter(Boolean) as { status: MessageStatus; label: string }[]
+                  ).map((next) => (
+                    <form key={next.status} action={setMessageStatus}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <input type="hidden" name="status" value={next.status} />
+                      <button type="submit" className={action}>
+                        {next.label}
+                      </button>
+                    </form>
+                  ))}
+                  <form action={deleteMessage} className="ml-auto">
+                    <input type="hidden" name="id" value={m.id} />
+                    <ConfirmSubmit confirm={`Delete the message from ${m.name}? This can't be undone.`}>Delete</ConfirmSubmit>
+                  </form>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </>
+  );
+}

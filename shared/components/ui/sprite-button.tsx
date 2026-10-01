@@ -17,6 +17,12 @@ type SpriteButtonProps = {
   /** Renders a real <button> instead of a link (form submits, actions). */
   type?: "button" | "submit";
   onClick?: () => void;
+  /** Buttons only: greyed out and unclickable (e.g. while a form is sending). */
+  disabled?: boolean;
+  /** Buttons only: sent with the form, so one form can have several submit actions. */
+  name?: string;
+  value?: string;
+  "aria-label"?: string;
   /** Open in a new tab. Defaults to true for http(s) links (WhatsApp, YouTube). */
   newTab?: boolean;
   /** Layout only (margins, `w-full`, `shrink-0`, radius); the look is fixed. */
@@ -37,7 +43,7 @@ type SpriteButtonProps = {
  * Touch screens and reduced motion get the resting look. Styles: `.sprite-btn`
  * in globals.css.
  */
-export function SpriteButton({ variant = "primary", href, type, onClick, newTab, className = "", children }: SpriteButtonProps) {
+export function SpriteButton({ variant = "primary", href, type, onClick, disabled, name, value, "aria-label": ariaLabel, newTab, className = "", children }: SpriteButtonProps) {
   const fillRef = useRef<HTMLSpanElement>(null);
   const progress = useRef(1); // 1 = fully painted (the primary button's resting state)
   const target = useRef(1);
@@ -100,7 +106,7 @@ export function SpriteButton({ variant = "primary", href, type, onClick, newTab,
 
   if (type || !href) {
     return (
-      <button type={type ?? "button"} onClick={onClick} className={classes} {...handlers}>
+      <button type={type ?? "button"} onClick={onClick} disabled={disabled} name={name} value={value} aria-label={ariaLabel} className={classes} {...handlers}>
         {inner}
       </button>
     );

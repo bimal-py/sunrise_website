@@ -1,9 +1,14 @@
 import { routes } from "@/lib/routes";
+import { SiteFooter } from "@/features/site/presentation/components/site-footer";
+import { SiteHeader } from "@/features/site/presentation/components/site-header";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 
+/** Unmatched URLs and notFound() render here, inside the root layout only, so it brings the site chrome itself. */
 export default function NotFound() {
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6">
+    <>
+      <SiteHeader />
+      <main id="main-content" className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">404</p>
       <h1 className="mt-3 text-[44px]">Page not found</h1>
       <p lang="ne" className="mt-1 text-muted">
@@ -17,5 +22,7 @@ export default function NotFound() {
         </SpriteButton>
       </div>
     </main>
+      <SiteFooter />
+    </>
   );
 }

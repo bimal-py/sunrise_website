@@ -1,3 +1,5 @@
+import type { ImageAsset } from "@/shared/domain/image";
+
 export type FilmCategory = "weddings" | "ceremonies" | "culture";
 
 export const filmCategories: { slug: FilmCategory; label: string; labelNe: string }[] = [
@@ -10,16 +12,8 @@ export function filmCategoryLabel(category: FilmCategory): string {
   return filmCategories.find((c) => c.slug === category)?.label ?? category;
 }
 
-/** A film's thumbnail, pre-built by scripts/optimize-images.py. */
-export type FilmImage = {
-  /** Logical path "/images/films/<id>.webp"; lib/image-loader.ts serves the right size. */
-  src: string;
-  width: number;
-  height: number;
-  blurDataURL: string;
-  /** 1200×630 JPEG for link previews. */
-  ogImage: string;
-};
+/** A film's thumbnail: pre-built sizes (scripts/optimize-images.py, or the dashboard's YouTube sync). */
+export type FilmImage = ImageAsset;
 
 /** A film from the studio's YouTube channel, as the site shows it. */
 export type Film = {
@@ -37,6 +31,11 @@ export type Film = {
   publishedAt: string;
   featured: boolean;
   thumbnail: FilmImage | null;
+  /** Dashboard SEO overrides; empty = the generated title and description. */
+  seoTitle?: string;
+  seoDescription?: string;
+  /** When the film's page last changed (sitemap lastmod). */
+  updatedAt?: string | null;
   watchUrl: string;
   embedUrl: string;
 };

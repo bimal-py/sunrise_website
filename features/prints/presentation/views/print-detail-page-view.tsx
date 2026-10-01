@@ -1,7 +1,8 @@
-import { notFound } from "next/navigation";
 import { routes } from "@/lib/routes";
 import { breadcrumbJsonLd, type Crumb } from "@/lib/seo/breadcrumbs";
 import { serviceJsonLd } from "@/lib/seo/structured-data";
+import { redirectOrNotFound } from "@/features/site/data/redirects.repository";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
 import { printRepository } from "@/features/prints/data/prints.repository";
 import { serviceRepository } from "@/features/services/data/services.repository";
 import { InquiryCard } from "@/shared/components/content/inquiry-card";
@@ -16,7 +17,7 @@ import { ViewAllLink } from "@/shared/components/ui/view-all-link";
 
 export async function PrintDetailPageView({ slug }: { slug: string }) {
   const print = await printRepository.get(slug);
-  if (!print) notFound();
+  if (!print) return redirectOrNotFound(routes.print(slug));
   const [services, others] = await Promise.all([
     serviceRepository.listByPrint(print.slug),
     printRepository.list().then((all) => all.filter((p) => p.slug !== print.slug).slice(0, 3)),
@@ -31,7 +32,7 @@ export async function PrintDetailPageView({ slug }: { slug: string }) {
   return (
     <main>
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
-      <JsonLd data={serviceJsonLd({ name: print.name, description: print.summary, path: routes.print(print.slug), serviceType: print.serviceType })} />
+      <JsonLd data={serviceJsonLd(await getSiteSettings(), { name: print.name, description: print.summary, path: routes.print(print.slug), serviceType: print.serviceType })} />
       <Container narrow className="pt-8 pb-20">
         <Breadcrumbs crumbs={crumbs} />
 

@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const YEAR = 60 * 60 * 24 * 365;
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Dashboard photo uploads (shrunk to under 4 MB in the browser; Vercel's cap is 4.5 MB).
+    serverActions: { bodySizeLimit: "4.5mb" },
+  },
   images: {
     // Images are pre-built (scripts/optimize-images.py) and picked by our own
     // loader, so nothing is resized on request: no cold-start wait, no usage quota.

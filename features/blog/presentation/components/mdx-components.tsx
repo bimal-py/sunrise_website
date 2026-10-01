@@ -15,4 +15,11 @@ export const mdxComponents = {
     ),
   /** Inline Nepali: <Ne>विद्यालय</Ne> — sets lang so the Devanagari font applies. */
   Ne: (props: ComponentProps<"span">) => <span lang="ne" {...props} />,
+  // Post bodies come from the dashboard: elements that could run code or load other pages render nothing.
+  script: () => null,
+  style: () => null,
+  iframe: () => null,
+  object: () => null,
+  embed: () => null,
+  form: () => null,
 };

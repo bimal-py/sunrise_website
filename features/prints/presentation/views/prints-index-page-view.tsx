@@ -1,4 +1,5 @@
-import { siteConfig, whatsappUrl } from "@/lib/config/site";
+import { whatsappUrl } from "@/lib/config/site";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
 import { routes } from "@/lib/routes";
 import { itemListJsonLd } from "@/lib/seo/structured-data";
 import { printRepository } from "@/features/prints/data/prints.repository";
@@ -16,7 +17,7 @@ const steps = [
 ];
 
 export async function PrintsIndexPageView() {
-  const prints = await printRepository.list();
+  const [prints, site] = await Promise.all([printRepository.list(), getSiteSettings()]);
 
   return (
     <main>
@@ -41,7 +42,7 @@ export async function PrintsIndexPageView() {
             eyebrow="How to order"
             title="From your phone to your wall"
             action={
-              <SpriteButton href={whatsappUrl(`Hello ${siteConfig.name}, I'd like to order a print.`)}>
+              <SpriteButton href={whatsappUrl(site.contact.whatsapp, `Hello ${site.name}, I'd like to order a print.`)}>
                 <WhatsAppIcon className="h-4 w-4" /> Order on WhatsApp
               </SpriteButton>
             }

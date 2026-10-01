@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import type { FilmImage } from "@/features/films/domain/entities";
-import type { Print } from "@/features/prints/domain/entities";
+import type { Print, PrintMockup } from "@/features/prints/domain/entities";
 import { Carousel } from "@/shared/components/ui/carousel";
 import { routes } from "@/lib/routes";
 import { hangOnLine } from "./drying-line";
@@ -197,14 +197,16 @@ function PhotoBook({ still }: { still?: FilmImage }) {
 // for the rope's shape); clips are fractions across it; weight pulls the rope
 // down. Wide pieces take two clips, narrow ones one; the three loose prints
 // each hang from their own.
-const pieces: Record<string, { width: string; nominal: number; clips: number[]; weight: number; loose?: boolean }> = {
-  "premium-albums": { width: "w-[76vw] sm:w-[460px]", nominal: 460, clips: [0.16, 0.84], weight: 3 },
-  "photo-frames": { width: "w-[58vw] sm:w-[250px]", nominal: 250, clips: [0.5], weight: 2.6 },
-  "canvas-prints": { width: "w-[76vw] sm:w-[380px]", nominal: 380, clips: [0.15, 0.83], weight: 2 },
-  "photo-prints": { width: "w-[76vw] sm:w-[500px]", nominal: 500, clips: [0.1567, 0.5, 0.8433], weight: 0.9, loose: true },
-  "photo-books": { width: "w-[60vw] sm:w-[260px]", nominal: 260, clips: [0.5], weight: 1.2 },
+// Keyed by the print's mockup (set in the dashboard), so renaming a print never loses its object.
+type Piece = { width: string; nominal: number; clips: number[]; weight: number; loose?: boolean };
+const pieces: Record<PrintMockup, Piece> = {
+  album: { width: "w-[76vw] sm:w-[460px]", nominal: 460, clips: [0.16, 0.84], weight: 3 },
+  frame: { width: "w-[58vw] sm:w-[250px]", nominal: 250, clips: [0.5], weight: 2.6 },
+  canvas: { width: "w-[76vw] sm:w-[380px]", nominal: 380, clips: [0.15, 0.83], weight: 2 },
+  "loose-prints": { width: "w-[76vw] sm:w-[500px]", nominal: 500, clips: [0.1567, 0.5, 0.8433], weight: 0.9, loose: true },
+  book: { width: "w-[60vw] sm:w-[260px]", nominal: 260, clips: [0.5], weight: 1.2 },
 };
-const fallback = { width: "w-[70vw] sm:w-[320px]", nominal: 320, clips: [0.5], weight: 1.5 };
+const fallback: Piece = { width: "w-[70vw] sm:w-[320px]", nominal: 320, clips: [0.5], weight: 1.5 };
 /** Where the rope is tied, off screen (px below the track's top), and its deepest sag below that. */
 const anchor = -4;
 const sag = 56;
@@ -230,14 +232,14 @@ const pct = (fraction: number) => Math.round(fraction * 10000) / 100;
  */
 export function DarkroomWall({ prints, stills, center }: { prints: Print[]; stills: Record<string, FilmImage>; center?: ReactNode }) {
   // `drops`: how far below the piece's top each of its clips hangs; `tilt`: the rope's slope there (only loose prints use them).
-  const objects: Record<string, (print: Print, drops: number[], tilt: string) => ReactNode> = {
-    "premium-albums": (print) => <Album stills={print.previewFilmIds.map((id) => stills[id])} />,
-    "photo-frames": (print) => <Frame still={stills[print.previewFilmIds[0]]} />,
-    "canvas-prints": (print) => <Canvas still={stills[print.previewFilmIds[0]]} />,
-    "photo-prints": (print, drops, tilt) => <PrintStack stills={print.previewFilmIds.map((id) => stills[id])} drops={drops} tilt={tilt} />,
-    "photo-books": (print) => <PhotoBook still={stills[print.previewFilmIds[0]]} />,
+  const objects: Record<PrintMockup, (print: Print, drops: number[], tilt: string) => ReactNode> = {
+    album: (print) => <Album stills={print.previewFilmIds.map((id) => stills[id])} />,
+    frame: (print) => <Frame still={stills[print.previewFilmIds[0]]} />,
+    canvas: (print) => <Canvas still={stills[print.previewFilmIds[0]]} />,
+    "loose-prints": (print, drops, tilt) => <PrintStack stills={print.previewFilmIds.map((id) => stills[id])} drops={drops} tilt={tilt} />,
+    book: (print) => <PhotoBook still={stills[print.previewFilmIds[0]]} />,
   };
-  const setups = prints.map((print) => pieces[print.slug] ?? fallback);
+  const setups = prints.map((print) => (print.mockup ? pieces[print.mockup] : fallback));
   const line = hangOnLine(
     setups.map(({ nominal, clips, weight }) => ({ width: nominal, clips, weight })),
     { gap: 48, reach, lead, sag },
@@ -292,7 +294,7 @@ export function DarkroomWall({ prints, stills, center }: { prints: Print[]; stil
                 <Rope className="left-full w-px" points={[["0", at(hung.right)], [`${lead / 2}`, at(hung.after)], [`${lead}`, at(line.end)]]} />
               )}
               <div className="darkroom-dim relative" style={turn}>
-                {objects[print.slug]?.(print, drops, slope)}
+                {print.mockup && objects[print.mockup](print, drops, slope)}
                 {!setup.loose && setup.clips.map((clip) => <Clip key={clip} at={pct(clip)} part="front" />)}
               </div>
               <div className="mt-auto pt-6">

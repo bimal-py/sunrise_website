@@ -14,7 +14,6 @@ import {
   Sunrise,
   type LucideIcon,
 } from "lucide-react";
-import { siteConfig, whatsappUrl } from "@/lib/config/site";
 import { mobileDockIds, navItems, type NavItem } from "@/lib/constants/navigation";
 import { WhatsAppIcon } from "@/shared/components/brand/social-icons";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
@@ -39,7 +38,10 @@ const shadow = "shadow-[0_4px_6px_rgba(0,0,0,0.3),0_16px_40px_rgba(0,0,0,0.55)]"
  * adding history); elsewhere they go to the section's own page. Plain CSS, no
  * motion library, no blur.
  */
-export function FloatingNav() {
+/** Contact details from the studio's settings, passed down by the (server) SiteHeader. */
+export type NavContact = { phone: string; phoneHref: string; bookingHref: string; whatsappHref: string };
+
+export function FloatingNav({ contact }: { contact: NavContact }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const activeId = useActiveSection();
@@ -112,7 +114,7 @@ export function FloatingNav() {
               </Link>
             );
           })}
-          <SpriteButton href={whatsappUrl(`Hello ${siteConfig.name}, I'd like to ask about booking.`)} className="ml-1 h-10 rounded-full">
+          <SpriteButton href={contact.bookingHref} className="ml-1 h-10 rounded-full">
             <WhatsAppIcon className="h-4 w-4" />
             WhatsApp
           </SpriteButton>
@@ -152,14 +154,14 @@ export function FloatingNav() {
               );
             })}
             <li className="mt-1 border-t border-line pt-1">
-              <a href={siteConfig.contact.phoneHref} className="flex h-11 items-center gap-3 rounded-card px-3 text-sm font-medium text-foreground hover:bg-raised">
+              <a href={contact.phoneHref} className="flex h-11 items-center gap-3 rounded-card px-3 text-sm font-medium text-foreground hover:bg-raised">
                 <Phone size={16} strokeWidth={1.8} aria-hidden />
-                Call {siteConfig.contact.phone}
+                Call {contact.phone}
               </a>
             </li>
             <li>
               <a
-                href={whatsappUrl()}
+                href={contact.whatsappHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-11 items-center gap-3 rounded-card px-3 text-sm font-medium text-foreground hover:bg-raised"

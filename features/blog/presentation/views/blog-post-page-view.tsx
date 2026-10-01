@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { siteConfig, whatsappUrl } from "@/lib/config/site";
+import type { SiteSettings } from "@/features/site/domain/entities";
+import { whatsappUrl } from "@/lib/config/site";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { redirectOrNotFound } from "@/features/site/data/redirects.repository";
 import { routes } from "@/lib/routes";
 import { breadcrumbJsonLd, type Crumb } from "@/lib/seo/breadcrumbs";
 import { absoluteUrl } from "@/lib/seo/metadata";
@@ -19,7 +21,7 @@ import { Container } from "@/shared/components/ui/container";
 import { eyebrowClasses } from "@/shared/components/ui/section-heading";
 import { BlogCard } from "../components/blog-card";
 
-function articleJsonLd(post: BlogPost) {
+function articleJsonLd(post: BlogPost, site: SiteSettings) {
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -30,7 +32,7 @@ function articleJsonLd(post: BlogPost) {
     dateModified: post.updatedAt ?? post.publishedAt,
     ...(post.coverImage ? { image: absoluteUrl(post.coverImage.ogImage) } : {}),
     author: { "@type": "Organization", name: post.author, url: absoluteUrl(routes.about()) },
-    publisher: { "@type": "Organization", name: siteConfig.name, logo: { "@type": "ImageObject", url: absoluteUrl("/brand/logo-512.jpg") } },
+    publisher: { "@type": "Organization", name: site.name, logo: { "@type": "ImageObject", url: absoluteUrl("/brand/logo-512.jpg") } },
     mainEntityOfPage: absoluteUrl(routes.post(post.slug)),
   };
 }
@@ -43,8 +45,8 @@ function articleJsonLd(post: BlogPost) {
  * the guides with the most topics in common, in the shared carousel.
  */
 export async function BlogPostPageView({ slug }: { slug: string }) {
-  const post = await blogRepository.getPost(slug);
-  if (!post) notFound();
+  const [post, site] = await Promise.all([blogRepository.getPost(slug), getSiteSettings()]);
+  if (!post) return redirectOrNotFound(routes.post(slug));
   const related = await blogRepository.listRelated(post.slug, 3);
   const updated = post.updatedAt && post.updatedAt.slice(0, 10) !== post.publishedAt.slice(0, 10) ? post.updatedAt : null;
 
@@ -57,7 +59,7 @@ export async function BlogPostPageView({ slug }: { slug: string }) {
   return (
     <main>
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
-      <JsonLd data={articleJsonLd(post)} />
+      <JsonLd data={articleJsonLd(post, site)} />
       <Container narrow className="flex flex-col gap-8 pb-16 pt-8">
         <Breadcrumbs crumbs={crumbs} />
 
@@ -143,7 +145,7 @@ export async function BlogPostPageView({ slug }: { slug: string }) {
                 <p className="mt-1 text-sm text-muted">Tell us the date and the place, and we&apos;ll tell you if we&apos;re free.</p>
               </div>
               <SpriteButton
-                href={whatsappUrl(`Hello ${siteConfig.name}, I read "${post.title}" on your website and I'd like to ask about booking.`)}
+                href={whatsappUrl(site.contact.whatsapp, `Hello ${site.name}, I read "${post.title}" on your website and I'd like to ask about booking.`)}
                 className="shrink-0"
               >
                 <WhatsAppIcon className="h-4 w-4" /> Ask on WhatsApp

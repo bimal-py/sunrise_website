@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter, Noto_Sans_Devanagari } from "next/font/google";
-import { siteConfig } from "@/lib/config/site";
+import { siteUrl } from "@/lib/config/site";
 import { absoluteUrl, defaultOgImage } from "@/lib/seo/metadata";
-import { SiteFooter } from "@/features/site/presentation/components/site-footer";
-import { SiteHeader } from "@/features/site/presentation/components/site-header";
-import { SiteAnalytics } from "@/shared/components/analytics/site-analytics";
+import { getSiteSettings } from "@/features/site/data/settings.repository";
 import "./globals.css";
 
 // Variable fonts: one file each covers every weight used.
@@ -30,33 +28,42 @@ const devanagari = Noto_Sans_Devanagari({
   preload: false,
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
-  title: {
-    default: `${siteConfig.name}: wedding photos, films and prints in Syangja`,
-    template: `%s | ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  applicationName: siteConfig.name,
-  category: "photography",
-  formatDetection: { email: false, address: false, telephone: false },
-  alternates: { canonical: absoluteUrl("/") },
-  openGraph: {
-    title: siteConfig.name,
-    description: siteConfig.description,
-    type: "website",
-    locale: siteConfig.locale,
-    url: absoluteUrl("/"),
-    siteName: siteConfig.name,
-    images: [{ url: defaultOgImage, width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteConfig.name,
-    description: siteConfig.description,
-    images: [defaultOgImage],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSiteSettings();
+  const ogImage = site.seo.ogImage?.ogImage ?? defaultOgImage;
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: site.defaultTitle,
+      template: `%s | ${site.name}`,
+    },
+    description: site.description,
+    applicationName: site.name,
+    category: "photography",
+    formatDetection: { email: false, address: false, telephone: false },
+    alternates: { canonical: absoluteUrl("/") },
+    openGraph: {
+      title: site.name,
+      description: site.description,
+      type: "website",
+      locale: site.locale,
+      url: absoluteUrl("/"),
+      siteName: site.name,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: site.name,
+      description: site.description,
+      images: [ogImage],
+    },
+    // Search Console / Bing Webmaster ownership tags (dashboard → Settings → SEO).
+    verification: {
+      ...(site.seo.googleVerification ? { google: site.seo.googleVerification } : {}),
+      ...(site.seo.bingVerification ? { other: { "msvalidate.01": site.seo.bingVerification } } : {}),
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#101011",
@@ -75,12 +82,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         >
           Skip to content
         </a>
-        <SiteHeader />
-        <div id="main-content" className="flex flex-1 flex-col">
-          {children}
-        </div>
-        <SiteFooter />
-        <SiteAnalytics />
+        {children}
       </body>
     </html>
   );

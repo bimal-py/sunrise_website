@@ -16,7 +16,13 @@ export const COLLECTION_WIDTHS: Record<string, number[]> = {
 
 const PHOTO = /^\/images\/(blog|films)\/([A-Za-z0-9_-]+)\.webp$/;
 
+/** Uploads from the dashboard: "<storage>/media/<collection>/<name>.webp" → "…/<name>-<width>.webp" (lib/media/process-image.ts). */
+const UPLOAD = /^(https:\/\/[^/]+\/storage\/v1\/object\/public\/media\/[a-z0-9-]+)\/([A-Za-z0-9_-]+)\.webp$/;
+const UPLOAD_WIDTHS = [480, 800, 1280];
+
 export default function imageLoader({ src, width }: { src: string; width: number; quality?: number }) {
+  const upload = UPLOAD.exec(src);
+  if (upload) return `${upload[1]}/${upload[2]}-${UPLOAD_WIDTHS.find((w) => w >= width) ?? 1280}.webp`;
   const match = PHOTO.exec(src);
   if (!match) return src;
   const widths = COLLECTION_WIDTHS[match[1]];

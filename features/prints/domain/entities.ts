@@ -1,5 +1,8 @@
 import type { Offering } from "@/shared/domain/offering";
 
+/** The object the home page's darkroom line draws for a print (none = not on the line). */
+export type PrintMockup = "album" | "frame" | "canvas" | "loose-prints" | "book";
+
 /** One row of a print's options table: a size or a finish, and what it's good for. */
 export type PrintOption = { label: string; detail: string };
 
@@ -14,4 +17,6 @@ export type Print = Offering & {
   /** Sizes or finishes, shown as a table. Empty when the product is made to order. */
   options: PrintOption[];
   optionsHeading: string;
+  /** Which object hangs on the home page's drying line; null keeps it off the line. */
+  mockup: PrintMockup | null;
 };
