@@ -5,13 +5,17 @@ import { filmRepository } from "@/features/films/data/films.repository";
 import { filmCategories } from "@/features/films/domain/entities";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
 import { YouTubeIcon } from "@/shared/components/brand/social-icons";
-import { FilterItem, ListFilterSync } from "@/shared/components/filter/list-filter";
+import { ListFilterSync } from "@/shared/components/filter/list-filter";
+import { PagedGrid } from "@/shared/components/filter/paged-grid";
 import { JsonLd } from "@/shared/components/seo/json-ld";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 import { Container } from "@/shared/components/ui/container";
 import { SectionHeading } from "@/shared/components/ui/section-heading";
 import { FilmCard } from "../components/film-card";
 import { FilmCategoryNav, FilmsEmpty } from "../components/film-filters";
+
+/** Films per "page" of the grid (4 rows of 3); more appear as you scroll. */
+const PAGE_SIZE = 12;
 
 /**
  * Every film, newest first. One static page: ?category= is applied in the browser
@@ -45,13 +49,11 @@ export async function FilmsIndexPageView() {
 
         <FilmCategoryNav total={films.length} categories={filmCategories.map((c) => ({ slug: c.slug, label: c.label, count: counts[c.slug] }))} />
         <FilmsEmpty total={films.length} counts={counts} />
-        <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+        <PagedGrid targets={films.map((film) => ({ group: film.category }))} pageSize={PAGE_SIZE} noun="films" className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
           {films.map((film) => (
-            <FilterItem key={film.id} target={{ group: film.category }} className="min-w-0">
-              <FilmCard film={film} />
-            </FilterItem>
+            <FilmCard key={film.id} film={film} />
           ))}
-        </div>
+        </PagedGrid>
       </Container>
     </main>
   );

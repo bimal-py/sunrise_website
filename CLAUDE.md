@@ -302,7 +302,11 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
   `VideoObject`; post = `BlogPosting`. No ratings, reviews, prices or hours unless real.
 - `app/sitemap.ts` lists every canonical URL. `/films` and `/blogs` are single static pages: `?category=`, `?tag=`
   and `?q=` are applied in the browser (`shared/components/filter/list-filter.tsx`), so every card is in the HTML and
-  the canonical is the unfiltered page (no server render or cache entry per query).
+  the canonical is the unfiltered page (no server render or cache entry per query). They page like the portfolio:
+  `PagedGrid` (`shared/components/filter/paged-grid.tsx`) shows 12 films / 9 guides, reveals the next batch as
+  you near the end (infinite scroll, no request: the cards are already in the HTML), mirrors `?page=N` so back
+  lands at the same depth, and shows "12 of 15 films" / "All 15 films". Dashboard lists page on the server
+  (`.range()`, 25 per page, Newer/Older).
 - Search Console / Bing ownership: meta tags from Settings → Search and sharing. Per-item SEO title/description
   overrides live on each row (`seo_title`, `seo_description`); fixed pages' overrides in the `pages` table.
 

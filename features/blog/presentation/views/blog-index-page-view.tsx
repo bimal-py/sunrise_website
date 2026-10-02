@@ -1,12 +1,16 @@
 import { Suspense } from "react";
 import { blogRepository } from "@/features/blog/data/blog.repository";
 import { tagSlug } from "@/features/blog/data/blog.utils";
-import { FilterItem, ListFilterSync, type FilterTarget } from "@/shared/components/filter/list-filter";
+import { ListFilterSync, type FilterTarget } from "@/shared/components/filter/list-filter";
+import { PagedGrid } from "@/shared/components/filter/paged-grid";
 import { Container } from "@/shared/components/ui/container";
 import { eyebrowClasses } from "@/shared/components/ui/section-heading";
 import { BlogCard } from "../components/blog-card";
 import { BlogResults, BlogTopicNav } from "../components/blog-filters";
 import { BlogSearch } from "../components/blog-search";
+
+/** Guides per "page" of the grid (3 rows of 3); more appear as you scroll. */
+const PAGE_SIZE = 9;
 
 /**
  * The blog's front page, centred like the home scenes: eyebrow, title, the
@@ -46,13 +50,11 @@ export async function BlogIndexPageView() {
 
         <div className="mt-12">
           <BlogResults targets={targets} topics={topics} />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post, index) => (
-              <FilterItem key={post.slug} target={targets[index]} className="min-w-0">
-                <BlogCard post={post} />
-              </FilterItem>
+          <PagedGrid targets={targets} pageSize={PAGE_SIZE} noun="guides" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <BlogCard key={post.slug} post={post} />
             ))}
-          </div>
+          </PagedGrid>
         </div>
       </Container>
     </main>

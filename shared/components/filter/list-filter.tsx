@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 
 /**
- * Filtering for the static index pages (/films ?category=, /blogs ?tag= &q=). The server
- * renders every card, so the page stays one static file (no function call, no cache entry
- * per query) and crawlers see the full list. The URL's filter is mirrored into this small
- * store and cards that don't match are hidden in the browser.
+ * Filtering and paging for the static index pages (/films ?category=, /blogs ?tag= &q=,
+ * both ?page=). The server renders every card, so the page stays one static file (no
+ * function call, no cache entry per query) and crawlers see the full list. The URL's filter
+ * and page are mirrored into this small store; PagedGrid hides what doesn't match or isn't
+ * reached yet.
  */
-export type ListFilterState = { category: string; tag: string; q: string };
+export type ListFilterState = { category: string; tag: string; q: string; page: number };
 
-const initial: ListFilterState = { category: "", tag: "", q: "" };
+const initial: ListFilterState = { category: "", tag: "", q: "", page: 1 };
 let state = initial;
 const listeners = new Set<() => void>();
 
@@ -42,31 +43,22 @@ export function matchesFilter(filter: ListFilterState, item: FilterTarget): bool
   return words.every((word) => text.includes(word));
 }
 
-/** Mirrors the URL's ?category= / ?tag= / ?q= into the filter. Render inside <Suspense fallback={null}>. */
+/** Mirrors the URL's ?category= / ?tag= / ?q= / ?page= into the filter. Render inside <Suspense fallback={null}>. */
 export function ListFilterSync() {
   const params = useSearchParams();
   const category = params.get("category")?.trim() ?? "";
   const tag = params.get("tag")?.trim() ?? "";
   const q = params.get("q")?.trim() ?? "";
+  const page = Math.max(1, Number.parseInt(params.get("page") ?? "", 10) || 1);
 
   useEffect(() => {
-    setListFilter({ category, tag, q });
-  }, [category, tag, q]);
+    setListFilter({ category, tag, q, page });
+  }, [category, tag, q, page]);
 
   // Leaving the page: the next index starts unfiltered.
   useEffect(() => () => setListFilter(initial), []);
 
   return null;
-}
-
-/** A card slot that hides itself when it doesn't match the current filter. */
-export function FilterItem({ target, className, children }: { target: FilterTarget; className?: string; children: ReactNode }) {
-  const filter = useListFilter();
-  return (
-    <div className={className} hidden={!matchesFilter(filter, target)}>
-      {children}
-    </div>
-  );
 }
 
 /** How many of `targets` match right now, for counts and empty states. */

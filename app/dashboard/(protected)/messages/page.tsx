@@ -31,20 +31,36 @@ const badge: Record<MessageStatus, { tone: "gold" | "green" | "muted"; label: st
   archived: { tone: "muted", label: "Archived" },
 };
 
+const PAGE_SIZE = 25;
+
 const chip = "inline-flex h-9 items-center rounded-control border px-3 text-sm transition-colors duration-150";
 const action = "inline-flex min-h-8 items-center text-sm text-muted underline-offset-4 transition-colors duration-150 hover:text-strong hover:underline";
 
-type PageProps = { searchParams: Promise<{ status?: string }> };
+type PageProps = { searchParams: Promise<{ status?: string; page?: string }> };
 
 export default async function MessagesPage({ searchParams }: PageProps) {
-  const { status } = await searchParams;
+  const { status, page: pageParam } = await searchParams;
   const view: View = VIEWS.some((v) => v.id === status) ? (status as View) : "inbox";
+  const page = Math.max(1, Number.parseInt(pageParam ?? "", 10) || 1);
   const { supabase } = await requireAdmin();
 
-  let query = supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(200);
+  let query = supabase
+    .from("messages")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   query = view === "inbox" ? query.neq("status", "archived") : query.eq("status", view);
-  const [{ data: messages, error }, site] = await Promise.all([query, getSiteSettings()]);
+  const [{ data: messages, error, count }, site] = await Promise.all([query, getSiteSettings()]);
   if (error) throw new Error(`Couldn't load messages: ${error.message}`);
+  const total = count ?? messages.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageHref = (to: number) => {
+    const params = new URLSearchParams();
+    if (view !== "inbox") params.set("status", view);
+    if (to > 1) params.set("page", String(to));
+    const query = params.toString();
+    return query ? `${routes.dashboardMessages()}?${query}` : routes.dashboardMessages();
+  };
   const hasNew = messages.some((m) => m.status === "new");
 
   return (
@@ -149,6 +165,28 @@ export default async function MessagesPage({ searchParams }: PageProps) {
             );
           })}
         </ul>
+      )}
+
+      {pages > 1 && (
+        <nav aria-label="Message pages" className="mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className="inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-strong">
+              ← Newer
+            </Link>
+          ) : (
+            <span />
+          )}
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+          </p>
+          {page < pages ? (
+            <Link href={pageHref(page + 1)} className="inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-strong">
+              Older →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
       )}
     </>
   );

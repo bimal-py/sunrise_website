@@ -49,7 +49,7 @@ export function BlogSearch() {
         onChange={(event) => {
           const words = event.target.value;
           setValue(words);
-          setListFilter({ q: words.trim() });
+          setListFilter({ q: words.trim(), page: 1 });
           window.clearTimeout(timer.current);
           timer.current = window.setTimeout(() => go(words), 350);
         }}
