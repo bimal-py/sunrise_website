@@ -1,5 +1,7 @@
 import { whatsappUrl } from "@/lib/config/site";
+import { getPage } from "@/features/site/data/pages.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { pageCopy } from "@/features/site/domain/page-content";
 import { routes } from "@/lib/routes";
 import { itemListJsonLd } from "@/lib/seo/structured-data";
 import { printRepository } from "@/features/prints/data/prints.repository";
@@ -10,14 +12,15 @@ import { SpriteButton } from "@/shared/components/ui/sprite-button";
 import { Container } from "@/shared/components/ui/container";
 import { SectionHeading } from "@/shared/components/ui/section-heading";
 
-const steps = [
-  { title: "Send your photos", body: "On WhatsApp as a document (so they aren't compressed), or bring them on a pen drive or memory card." },
-  { title: "Choose size and finish", body: "Tell us where it will go and we'll suggest a size, a frame or a canvas, and give you a quote." },
-  { title: "Collect it", body: "We print and frame in the studio and let you know when it's ready." },
-];
-
 export async function PrintsIndexPageView() {
-  const [prints, site] = await Promise.all([printRepository.list(), getSiteSettings()]);
+  const [prints, site, page] = await Promise.all([printRepository.list(), getSiteSettings(), getPage("prints")]);
+  // The header and the "How to order" steps (dashboard → Pages → Prints).
+  const copy = pageCopy("prints", page.content);
+  const steps = [
+    { title: copy.step1Title, body: copy.step1Body },
+    { title: copy.step2Title, body: copy.step2Body },
+    { title: copy.step3Title, body: copy.step3Body },
+  ];
 
   return (
     <main>
@@ -25,10 +28,10 @@ export async function PrintsIndexPageView() {
       <Container className="pt-10 pb-20">
         <SectionHeading
           as="h1"
-          eyebrow="Prints and albums"
-          title="Albums, frames and prints"
-          titleNe="एल्बम, फ्रेम र फोटो प्रिन्ट"
-          description="Premium wedding albums, framed portraits, canvas prints, photo books and everyday prints, from our photos or yours."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleNe={copy.titleNe}
+          description={copy.lede}
         />
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {prints.map((print) => (
@@ -49,7 +52,7 @@ export async function PrintsIndexPageView() {
           />
           <ol className="grid border-t border-line md:grid-cols-3">
             {steps.map((step, index) => (
-              <li key={step.title} className="border-b border-line py-6 md:border-b-0 md:border-l md:px-6 md:first:border-l-0 md:first:pl-0">
+              <li key={index} className="border-b border-line py-6 md:border-b-0 md:border-l md:px-6 md:first:border-l-0 md:first:pl-0">
                 <p className="font-mono text-xs text-primary">0{index + 1}</p>
                 <h3 className="mt-2 text-lg">{step.title}</h3>
                 <p className="mt-2 text-sm text-muted">{step.body}</p>

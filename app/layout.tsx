@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Cormorant_Garamond, Inter, Noto_Sans_Devanagari } from "next/font/google";
 import { siteUrl } from "@/lib/config/site";
 import { absoluteUrl, defaultOgImage } from "@/lib/seo/metadata";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { NavProgress } from "@/shared/components/navigation/nav-progress";
 import "./globals.css";
 
 // Variable fonts: one file each covers every weight used.
@@ -82,6 +84,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         >
           Skip to content
         </a>
+        {/* Suspense: the bar reads the URL, which would otherwise make every static page render on the client. */}
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
         {children}
       </body>
     </html>

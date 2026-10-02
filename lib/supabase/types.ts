@@ -3,7 +3,7 @@
  * (keep them in step with every migration). jsonb columns are typed with their real shapes.
  */
 import type { ImageAsset } from "@/shared/domain/image";
-import type { ContentSection, Faq } from "@/shared/domain/offering";
+import type { ContentSection, Faq, OfferingIcon } from "@/shared/domain/offering";
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -115,7 +115,7 @@ type OfferingColumns = {
   slug: string;
   name: string;
   name_ne: string;
-  icon: string;
+  icon: OfferingIcon;
   summary: string;
   intro: string[];
   sections: ContentSection[];

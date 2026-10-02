@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { whatsappUrl } from "@/lib/config/site";
+import { getPage } from "@/features/site/data/pages.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { lineItems, pageCopy } from "@/features/site/domain/page-content";
 import { localBusinessJsonLd } from "@/lib/seo/structured-data";
 import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
 import { JsonLd } from "@/shared/components/seo/json-ld";
@@ -12,8 +14,10 @@ import { BookingForm } from "../components/booking-form";
 type Channel = { icon: ReactNode; label: string; value: string; href: string; external?: boolean };
 
 export async function ContactPageView() {
-  const site = await getSiteSettings();
+  const [site, page] = await Promise.all([getSiteSettings(), getPage("contact")]);
   const { contact, address, social } = site;
+  // The header, the visit note and the checklist (dashboard → Pages → Contact).
+  const copy = pageCopy("contact", page.content);
   const channels: Channel[] = [
     { icon: <WhatsAppIcon className="h-5 w-5" />, label: "WhatsApp", value: contact.whatsappDisplay, href: whatsappUrl(contact.whatsapp), external: true },
     { icon: <Phone className="h-5 w-5" aria-hidden />, label: "Call", value: contact.phone, href: contact.phoneHref },
@@ -28,10 +32,10 @@ export async function ContactPageView() {
       <Container className="pt-10 pb-20">
         <SectionHeading
           as="h1"
-          eyebrow="Contact"
-          title="Book a date or ask a question"
-          titleNe="सम्पर्क गर्नुहोस्"
-          description="WhatsApp is the quickest way to reach us. Tell us the occasion, the date and the place, and we'll reply with availability and a quote."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleNe={copy.titleNe}
+          description={copy.lede}
         />
 
         <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
@@ -75,7 +79,7 @@ export async function ContactPageView() {
               >
                 Open in Google Maps
               </a>
-              <p className="mt-3 text-sm text-muted">For portraits and passport photos, call before you come so we&apos;re ready for you.</p>
+              <p className="mt-3 text-sm text-muted">{copy.visitNote}</p>
             </section>
           </div>
 
@@ -86,10 +90,9 @@ export async function ContactPageView() {
                 What to include in your message
               </h2>
               <ul className="mt-3 grid gap-2 text-sm text-muted sm:grid-cols-2">
-                <li>The occasion, and the date (or the month)</li>
-                <li>The venue or village, for both sides of a wedding</li>
-                <li>Photos, a film, or both</li>
-                <li>Any album, frame or print you have in mind</li>
+                {lineItems(copy.include).map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
               </ul>
             </section>
           </div>

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { blogRepository } from "@/features/blog/data/blog.repository";
 import { tagSlug } from "@/features/blog/data/blog.utils";
+import { getPage } from "@/features/site/data/pages.repository";
+import { pageCopy } from "@/features/site/domain/page-content";
 import { ListFilterSync, type FilterTarget } from "@/shared/components/filter/list-filter";
 import { PagedGrid } from "@/shared/components/filter/paged-grid";
 import { Container } from "@/shared/components/ui/container";
@@ -19,7 +21,8 @@ const PAGE_SIZE = 9;
  * it in the browser, so they can be shared without costing a server render.
  */
 export async function BlogIndexPageView() {
-  const [posts, tags] = await Promise.all([blogRepository.listPosts(), blogRepository.listTags()]);
+  const [posts, tags, page] = await Promise.all([blogRepository.listPosts(), blogRepository.listTags(), getPage("blogs")]);
+  const copy = pageCopy("blogs", page.content);
   const topics = tags.map(({ tag }) => ({ label: tag, slug: tagSlug(tag) }));
   const targets: FilterTarget[] = posts.map((post) => ({
     tags: post.tags.map(tagSlug),
@@ -33,14 +36,12 @@ export async function BlogIndexPageView() {
       </Suspense>
       <Container className="pb-20 pt-10">
         <header className="mx-auto flex max-w-2xl flex-col items-center text-center">
-          <p className={eyebrowClasses}>Blog</p>
-          <h1 className="mt-3 text-balance text-[38px] leading-[1.08] sm:text-[52px]">Guides for your big days</h1>
+          <p className={eyebrowClasses}>{copy.eyebrow}</p>
+          <h1 className="mt-3 text-balance text-[38px] leading-[1.08] sm:text-[52px]">{copy.title}</h1>
           <p lang="ne" className="mt-2 text-muted">
-            तयारीका लागि सुझाव
+            {copy.titleNe}
           </p>
-          <p className="mt-5 max-w-xl text-muted">
-            Planning wedding photos and films, what to capture at a pasni or bratabandha, and choosing print sizes, frames and albums.
-          </p>
+          <p className="mt-5 max-w-xl text-muted">{copy.lede}</p>
           <div className="mt-8 flex w-full justify-center">
             <BlogSearch />
           </div>

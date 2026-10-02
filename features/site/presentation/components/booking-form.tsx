@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useContext, useEffect, useRef } from "react";
+import { FormPendingContext, keepValuesOnSubmit } from "@/shared/hooks/use-keep-values-submit";
 import { useFormStatus } from "react-dom";
 import { CircleCheck } from "lucide-react";
 import { whatsappUrl } from "@/lib/config/site";
@@ -14,7 +15,8 @@ const label = "mb-2 block text-sm font-medium text-strong";
 const initial: EnquiryState = { status: "idle" };
 
 function SendButton() {
-  const { pending } = useFormStatus();
+  const ownPending = useContext(FormPendingContext);
+  const pending = useFormStatus().pending || ownPending;
   return (
     <SpriteButton type="submit" disabled={pending}>
       {pending ? "Sending…" : "Send enquiry"}
@@ -35,7 +37,7 @@ function FieldError({ id, error }: { id: string; error?: string }) {
  * so it works without JavaScript too. WhatsApp stays one tap away, before and after.
  */
 export function BookingForm({ studioName, whatsapp }: { studioName: string; whatsapp: string }) {
-  const [state, action] = useActionState(submitEnquiry, initial);
+  const [state, action, pending] = useActionState(submitEnquiry, initial);
   const startedAt = useRef<HTMLInputElement>(null);
   // When the visitor started filling the form in: a bot posting instantly is ignored.
   useEffect(() => {
@@ -64,7 +66,8 @@ export function BookingForm({ studioName, whatsapp }: { studioName: string; what
   }
 
   return (
-    <form action={action} noValidate className="rounded-panel border border-line bg-surface p-6 sm:p-8">
+    <FormPendingContext value={pending}>
+    <form action={action} onSubmit={keepValuesOnSubmit(action)} noValidate className="rounded-panel border border-line bg-surface p-6 sm:p-8">
       <h2 className="text-[30px]">Send an enquiry</h2>
       <p className="mt-2 text-sm text-muted">Tell us the occasion, the date and the place. We&apos;ll reply on WhatsApp or by phone.</p>
 
@@ -151,5 +154,6 @@ export function BookingForm({ studioName, whatsapp }: { studioName: string; what
       </div>
       <p className="mt-4 text-xs text-muted">We keep your message only to reply to you. See our privacy notice.</p>
     </form>
+    </FormPendingContext>
   );
 }

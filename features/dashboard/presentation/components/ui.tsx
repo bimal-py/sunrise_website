@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { eyebrowClasses } from "@/shared/components/ui/section-heading";
 
@@ -12,6 +13,7 @@ export const inputClass =
 export const textareaClass = `${inputClass} h-auto min-h-28 py-2.5 leading-relaxed`;
 export const monoTextareaClass = `${textareaClass} font-mono text-[13px]`;
 export const labelClass = "mb-1.5 block text-sm font-medium text-strong";
+export const selectClass = `${inputClass} appearance-none bg-[length:14px] bg-[right_0.75rem_center] bg-no-repeat pr-9 bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ACA89F' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")]`;
 
 export function Panel({ title, description, actions, children, className = "" }: { title?: string; description?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
@@ -89,11 +91,27 @@ export function Stat({ label, value, note, href }: { label: string; value: React
     </>
   );
   return href ? (
-    <a href={href} className="block rounded-card border border-line bg-surface p-5 transition-colors duration-150 hover:border-line-strong">
+    <Link href={href} className="block rounded-card border border-line bg-surface p-5 transition-colors duration-150 hover:border-line-strong">
       {body}
-    </a>
+    </Link>
   ) : (
     <div className="rounded-card border border-line bg-surface p-5">{body}</div>
+  );
+}
+
+/** "← Newer · 1–25 of 80 · Older →" under a server-paged dashboard list. */
+export function Pager({ page, total, pageSize, href, noun = "" }: { page: number; total: number; pageSize: number; href: (page: number) => string; noun?: string }) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (pages <= 1) return null;
+  const link = "inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-strong";
+  return (
+    <nav aria-label="Pages" className="mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
+      {page > 1 ? <Link href={href(page - 1)} className={link}>← Previous</Link> : <span />}
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+        {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total} {noun}
+      </p>
+      {page < pages ? <Link href={href(page + 1)} className={link}>Next →</Link> : <span />}
+    </nav>
   );
 }
 

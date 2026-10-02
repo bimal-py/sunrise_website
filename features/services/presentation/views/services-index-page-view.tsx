@@ -3,6 +3,8 @@ import { routes } from "@/lib/routes";
 import { itemListJsonLd } from "@/lib/seo/structured-data";
 import { printRepository } from "@/features/prints/data/prints.repository";
 import { serviceRepository } from "@/features/services/data/services.repository";
+import { getPage } from "@/features/site/data/pages.repository";
+import { pageCopy } from "@/features/site/domain/page-content";
 import { OfferingCard } from "@/shared/components/content/offering-card";
 import { JsonLd } from "@/shared/components/seo/json-ld";
 import { Container } from "@/shared/components/ui/container";
@@ -10,7 +12,8 @@ import { SectionHeading } from "@/shared/components/ui/section-heading";
 import { ViewAllLink } from "@/shared/components/ui/view-all-link";
 
 export async function ServicesIndexPageView() {
-  const [services, prints] = await Promise.all([serviceRepository.list(), printRepository.list()]);
+  const [services, prints, page] = await Promise.all([serviceRepository.list(), printRepository.list(), getPage("services")]);
+  const copy = pageCopy("services", page.content);
 
   return (
     <main>
@@ -18,10 +21,10 @@ export async function ServicesIndexPageView() {
       <Container className="pt-10 pb-20">
         <SectionHeading
           as="h1"
-          eyebrow="Services"
-          title="What we photograph and film"
-          titleNe="हाम्रा सेवाहरू"
-          description="Weddings, family ceremonies, portraits and events across Syangja, plus passport and ID photos in the studio. Every booking starts with a message: tell us the date and what you need."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleNe={copy.titleNe}
+          description={copy.lede}
         />
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => (

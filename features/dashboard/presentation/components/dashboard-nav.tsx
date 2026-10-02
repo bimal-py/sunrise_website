@@ -34,14 +34,14 @@ const SECTIONS: { id: DashboardSection; label: string; href: string; icon: Lucid
   { id: "settings", label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-/** The dashboard's tabs, as on the portfolio's: a row of items, the current one in gold. Scrolls sideways on phones. */
+/** The dashboard's tabs, as on the portfolio's: a row of items, the current one in gold. Scrolls sideways on phones; wraps on wide screens. */
 export function DashboardNav({ available, unread }: { available: DashboardSection[]; unread: number }) {
   const pathname = usePathname();
   const items = SECTIONS.filter((section) => available.includes(section.id));
 
   return (
-    <nav aria-label="Dashboard" className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-6 sm:px-6">
-      <ul className="flex w-max gap-1">
+    <nav aria-label="Dashboard" className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:overflow-visible lg:px-0">
+      <ul className="flex w-max gap-1 lg:w-auto lg:flex-wrap lg:gap-0.5">
         {items.map(({ id, label, href, icon: Icon }) => {
           const active = href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
           return (
@@ -49,7 +49,7 @@ export function DashboardNav({ available, unread }: { available: DashboardSectio
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-10 items-center gap-2 rounded-control border px-3.5 text-sm transition-colors duration-150 ${
+                className={`flex h-10 items-center gap-2 rounded-control border px-3.5 text-sm transition-colors duration-150 lg:px-2.5 ${
                   active ? "border-primary/50 bg-nav-active text-primary" : "border-transparent text-muted hover:text-strong"
                 }`}
               >

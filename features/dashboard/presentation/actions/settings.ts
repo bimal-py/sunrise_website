@@ -1,7 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import { TAG } from "@/lib/cache/tags";
+import { ALL_TAGS, TAG } from "@/lib/cache/tags";
 import type { SiteSettingsRow } from "@/lib/supabase/types";
 import { requireAdminAction } from "@/features/dashboard/data/auth";
 import { image, list, num, str, url } from "@/features/dashboard/data/form";
@@ -101,4 +101,15 @@ export async function saveSettings(_prev: ActionState, formData: FormData): Prom
   // Settings appear on every page (nav, footer, structured data): all of them refresh on their next visit.
   updateTag(TAG.settings);
   return { status: "success", message: "Saved. The site shows it on the next visit." };
+}
+
+/**
+ * Rebuild every public page on its next visit: for content changed straight in Supabase
+ * (SQL editor, scripts), which doesn't refresh the site by itself. Costs one rebuild per
+ * page as it's visited, so it's a manual button, never automatic.
+ */
+export async function refreshWholeSite(): Promise<ActionState> {
+  await requireAdminAction();
+  for (const tag of ALL_TAGS) updateTag(tag);
+  return { status: "success", message: "Done. Every page shows the latest content on its next visit." };
 }

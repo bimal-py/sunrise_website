@@ -3,7 +3,9 @@ import { routes } from "@/lib/routes";
 import { itemListJsonLd } from "@/lib/seo/structured-data";
 import { filmRepository } from "@/features/films/data/films.repository";
 import { filmCategories } from "@/features/films/domain/entities";
+import { getPage } from "@/features/site/data/pages.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { pageCopy } from "@/features/site/domain/page-content";
 import { YouTubeIcon } from "@/shared/components/brand/social-icons";
 import { ListFilterSync } from "@/shared/components/filter/list-filter";
 import { PagedGrid } from "@/shared/components/filter/paged-grid";
@@ -22,7 +24,8 @@ const PAGE_SIZE = 12;
  * (see list-filter.tsx), so a filtered view costs no server work and adds no cache entry.
  */
 export async function FilmsIndexPageView() {
-  const [films, site] = await Promise.all([filmRepository.list(), getSiteSettings()]);
+  const [films, site, page] = await Promise.all([filmRepository.list(), getSiteSettings(), getPage("films")]);
+  const copy = pageCopy("films", page.content);
   const counts = Object.fromEntries(filmCategories.map((c) => [c.slug, films.filter((f) => f.category === c.slug).length]));
 
   return (
@@ -34,10 +37,10 @@ export async function FilmsIndexPageView() {
       <Container className="pt-10 pb-20">
         <SectionHeading
           as="h1"
-          eyebrow="Films"
-          title="Wedding and ceremony films"
-          titleNe="विवाह तथा संस्कारका भिडियो"
-          description="Weddings, pasni, bratabandha and cultural programmes we've filmed across Syangja. New films go up on our YouTube channel first."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleNe={copy.titleNe}
+          description={copy.lede}
           action={
             site.social.youtube ? (
               <SpriteButton href={site.social.youtube} variant="secondary">

@@ -1,14 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
+import { FormPendingContext, keepValuesOnSubmit } from "@/shared/hooks/use-keep-values-submit";
 import { signIn, type SignInState } from "@/features/dashboard/presentation/actions/auth";
 import { inputClass, labelClass } from "./ui";
 import { SubmitButton } from "./form-controls";
 
 export function LoginForm({ next, denied }: { next?: string; denied?: boolean }) {
-  const [state, action] = useActionState(signIn, denied ? { error: "That account doesn't have access to the dashboard." } : ({} as SignInState));
+  const [state, action, pending] = useActionState(signIn, denied ? { error: "That account doesn't have access to the dashboard." } : ({} as SignInState));
   return (
-    <form action={action} className="flex flex-col gap-5">
+    <FormPendingContext value={pending}>
+    <form action={action} onSubmit={keepValuesOnSubmit(action)} className="flex flex-col gap-5">
       <input type="hidden" name="next" value={next ?? ""} />
       <div>
         <label htmlFor="login-email" className={labelClass}>
@@ -29,5 +31,6 @@ export function LoginForm({ next, denied }: { next?: string; denied?: boolean })
       )}
       <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
     </form>
+    </FormPendingContext>
   );
 }

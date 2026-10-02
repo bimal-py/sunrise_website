@@ -7,7 +7,9 @@ import { printRepository } from "@/features/prints/data/prints.repository";
 import { reviewRepository } from "@/features/reviews/data/reviews.repository";
 import { ReviewCard } from "@/features/reviews/presentation/components/review-card";
 import { serviceRepository } from "@/features/services/data/services.repository";
+import { getPage } from "@/features/site/data/pages.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { pageCopy } from "@/features/site/domain/page-content";
 import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
 import { SunriseMark } from "@/shared/components/brand/sunrise-mark";
 import { JsonLd } from "@/shared/components/seo/json-ld";
@@ -47,7 +49,7 @@ const litSection = "relative isolate";
  * ids match `navItems` (lib/constants/navigation.ts), which scrolls to them.
  */
 export async function HomePageView() {
-  const [reel, allFilms, services, allServices, prints, reviews, site] = await Promise.all([
+  const [reel, allFilms, services, allServices, prints, reviews, site, page] = await Promise.all([
     filmRepository.listHighlights(8),
     filmRepository.list(),
     serviceRepository.list({ featured: true }),
@@ -55,7 +57,10 @@ export async function HomePageView() {
     printRepository.list(),
     reviewRepository.list(),
     getSiteSettings(),
+    getPage("home"),
   ]);
+  // The scenes' titles and ledes (dashboard → Pages → Home); the headline is a studio setting.
+  const copy = pageCopy("home", page.content, site);
   const otherServices = allServices.filter((service) => !service.featured);
   // Only prints with a mock-up hang on the darkroom line.
   const hanging = prints.filter((print) => print.mockup);
@@ -142,8 +147,8 @@ export async function HomePageView() {
           <SceneHeading
             scene={sceneOf("films")}
             id="films-heading"
-            title="Now showing"
-            lede="Weddings and ceremonies we've filmed across Syangja, frame by frame. Swipe through the reel."
+            title={copy.filmsTitle}
+            lede={copy.filmsLede}
           />
         </Container>
         <FilmStrip films={reel} total={allFilms.length} center={
@@ -159,8 +164,8 @@ export async function HomePageView() {
           <SceneHeading
             scene={sceneOf("services")}
             id="services-heading"
-            title="The shot list"
-            lede="What we photograph and film. Every shoot starts with a list like this, made with you."
+            title={copy.servicesTitle}
+            lede={copy.servicesLede}
           />
           <ShotList services={services} others={otherServices} stills={stills} />
           <div className="mt-12 flex justify-center">
@@ -175,8 +180,8 @@ export async function HomePageView() {
           <SceneHeading
             scene={sceneOf("prints")}
             id="prints-heading"
-            title="From the darkroom"
-            lede="Photos shouldn't stay on a phone. Albums, frames and canvas, printed in our studio."
+            title={copy.printsTitle}
+            lede={copy.printsLede}
           />
         </Container>
         <DarkroomWall
@@ -193,7 +198,7 @@ export async function HomePageView() {
       {reviews.length > 0 && (
         <section id="reviews" aria-labelledby="reviews-heading" className={section}>
           <Container>
-            <SceneHeading scene={sceneOf("reviews")} id="reviews-heading" title="Kind words" lede="From the families we've photographed, in their own words." />
+            <SceneHeading scene={sceneOf("reviews")} id="reviews-heading" title={copy.reviewsTitle} lede={copy.reviewsLede} />
           </Container>
           <Carousel
             label="Reviews"
@@ -219,14 +224,14 @@ export async function HomePageView() {
 
       <section id="about" aria-labelledby="about-heading" className={section}>
         <Container>
-          <SceneHeading scene={sceneOf("about")} id="about-heading" title="Behind the lens" />
+          <SceneHeading scene={sceneOf("about")} id="about-heading" title={copy.aboutTitle} lede={copy.aboutLede || undefined} />
           <BehindTheLens site={site} firstYear={firstYear} />
         </Container>
       </section>
 
       <section id="contact" aria-labelledby="contact-heading" className={section}>
         <Container>
-          <SceneHeading scene={sceneOf("contact")} id="contact-heading" title="Book a date" lede="Your day, our camera. Here's how to reach us." />
+          <SceneHeading scene={sceneOf("contact")} id="contact-heading" title={copy.contactTitle} lede={copy.contactLede} />
           <Slate scene={sceneOf("contact")} site={site} />
         </Container>
       </section>

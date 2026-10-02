@@ -3,6 +3,8 @@ import { requireAdmin } from "@/features/dashboard/data/auth";
 import { saveSettings } from "@/features/dashboard/presentation/actions/settings";
 import { ActionForm } from "@/features/dashboard/presentation/components/action-form";
 import { ImageField } from "@/features/dashboard/presentation/components/image-field";
+import { SettingsTabs } from "@/features/dashboard/presentation/components/settings-tabs";
+import { RefreshSite } from "@/features/dashboard/presentation/components/refresh-site";
 import { Field, inputClass, PageHeader, Panel, textareaClass } from "@/features/dashboard/presentation/components/ui";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -19,6 +21,7 @@ export default async function SettingsPage() {
         title="Studio settings"
         description="Everything here appears across the whole site: the nav, the footer, the contact page and what search engines read. Each section saves on its own."
       />
+      <SettingsTabs />
       <div className="flex flex-col gap-6">
         <Panel title="Studio" description="The name and the words that introduce the studio.">
           <ActionForm action={saveSettings}>
@@ -183,6 +186,10 @@ export default async function SettingsPage() {
               </div>
             </div>
           </ActionForm>
+        </Panel>
+
+        <Panel title="Refresh the public site" description="Saving anything in the dashboard updates the site by itself. Use this only after changing content directly in Supabase.">
+          <RefreshSite />
         </Panel>
       </div>
     </>

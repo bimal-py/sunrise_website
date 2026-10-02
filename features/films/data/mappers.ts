@@ -3,12 +3,12 @@ import { slugify } from "@/lib/utils/slug";
 import type { BuiltImageDto, FilmCurationDto, YouTubeVideoDto } from "./dto";
 
 /** Uncurated uploads: "x weds y" is a wedding, anything else a ceremony until someone files it. */
-function guessCategory(title: string): FilmCategory {
+export function guessCategory(title: string): FilmCategory {
   return /\bweds?\b|wedding|bibaha|विवाह/i.test(title) ? "weddings" : "ceremonies";
 }
 
 /** "SAGAR WEDS ASMITA" → "Sagar weds Asmita" (only used when curation has no title). */
-function tidyTitle(title: string): string {
+export function tidyTitle(title: string): string {
   const letters = title.replace(/[^A-Za-z]/g, "");
   const shouting = letters.length > 0 && letters === letters.toUpperCase();
   const lower = shouting || title === title.toLowerCase() ? title.toLowerCase() : title;

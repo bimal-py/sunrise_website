@@ -1,5 +1,8 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
+import { getPage } from "@/features/site/data/pages.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { pageBody, pageCopy, paragraphs } from "@/features/site/domain/page-content";
 import { routes } from "@/lib/routes";
 import { filmRepository } from "@/features/films/data/films.repository";
 import { printRepository } from "@/features/prints/data/prints.repository";
@@ -8,27 +11,40 @@ import { InquiryCard } from "@/shared/components/content/inquiry-card";
 import { Container } from "@/shared/components/ui/container";
 import { SectionHeading } from "@/shared/components/ui/section-heading";
 
+/** The intro's first paragraph: the studio's name in bold when it opens with it. */
+function withStudioName(text: string, name: string): ReactNode {
+  if (!name || !text.startsWith(name)) return text;
+  return (
+    <>
+      <strong>{name}</strong>
+      {text.slice(name.length)}
+    </>
+  );
+}
+
 export async function AboutPageView() {
   const site = await getSiteSettings();
-  const [services, prints, films] = await Promise.all([serviceRepository.list(), printRepository.list(), filmRepository.list()]);
+  const [services, prints, films, page] = await Promise.all([serviceRepository.list(), printRepository.list(), filmRepository.list(), getPage("about")]);
   const firstYear = films.at(-1)?.publishedAt.slice(0, 4);
+  // The header and the introduction (dashboard → Pages → About); the sections below are built from the content.
+  const copy = pageCopy("about", page.content, site);
+  const intro = paragraphs(pageBody("about", page.body, site));
 
   return (
     <main>
       <Container narrow className="pt-10 pb-20">
-        <SectionHeading as="h1" eyebrow="About" title={`About ${site.name}`} titleNe={site.nameNe} />
+        <SectionHeading as="h1" eyebrow={copy.eyebrow} title={copy.title} titleNe={copy.titleNe} />
         <div className="grid gap-10 lg:grid-cols-[1.6fr_1fr]">
           <div className="prose-article">
-            <p className="text-lg">
-              <strong>{site.name}</strong> is a photo and film studio in Arjunchaupari, Syangja. We photograph and film
-              weddings, pasni, bratabandha, pujas and cultural programmes across the district, from Arjunchaupari to Panchamul,
-              Walling and Tirasi, and we print what we shoot: albums, frames, canvas prints and everyday photos.
-            </p>
-            <p>
-              Most of our work is for families: the days they&apos;ll want to see again, and relatives in Nepal and abroad
-              will want to watch. That&apos;s why we film every ritual in order, make sure every side of the family gets its
-              group photo, and turn the best pictures into things people keep on a shelf or a wall.
-            </p>
+            {intro.map((text, index) =>
+              index === 0 ? (
+                <p key={index} className="text-lg">
+                  {withStudioName(text, site.name)}
+                </p>
+              ) : (
+                <p key={index}>{text}</p>
+              ),
+            )}
 
             <h2>What we do</h2>
             <ul>

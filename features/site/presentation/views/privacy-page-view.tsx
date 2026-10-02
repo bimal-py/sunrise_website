@@ -10,7 +10,7 @@ export async function PrivacyPageView() {
   return (
     <main>
       <Container narrow className="pt-10 pb-20">
-        <SectionHeading as="h1" eyebrow="Privacy" title="Privacy notice" description="Last updated 1 October 2026." />
+        <SectionHeading as="h1" eyebrow="Privacy" title="Privacy notice" description="Last updated 3 October 2026." />
         <div className="prose-article max-w-3xl">
           <p>
             {site.name}&apos;s website asks you to sign up for nothing, doesn&apos;t use advertising trackers, and doesn&apos;t sell
@@ -25,6 +25,17 @@ export async function PrivacyPageView() {
             us and we&apos;ll delete your message. If you message us on WhatsApp instead, that conversation is under
             WhatsApp&apos;s own privacy policy.
           </p>
+          {site.clarityId && (
+            <>
+              <h2>Visitor statistics</h2>
+              <p>
+                We use Microsoft Clarity to see how people use this website (which pages they read, where they click and how far
+                they scroll), so we can make it easier to use. It sets cookies, records visits without your name, and hides what
+                you type into forms. Microsoft&apos;s privacy statement applies to that data. Most browsers let you block these
+                cookies.
+              </p>
+            </>
+          )}
           <h2>Films</h2>
           <p>
             Film pages show our own preview image. YouTube&apos;s player only loads when you press play, and it uses

@@ -8,7 +8,7 @@ import { formatDateTime } from "@/lib/utils/date";
 import { toWhatsappNumber } from "@/lib/utils/phone";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
 import { requireAdmin } from "@/features/dashboard/data/auth";
-import { ConfirmSubmit } from "@/features/dashboard/presentation/components/form-controls";
+import { ConfirmSubmit, QuietSubmit } from "@/features/dashboard/presentation/components/form-controls";
 import { PageHeader, StatusBadge } from "@/features/dashboard/presentation/components/ui";
 import { deleteMessage, markAllRead, setMessageStatus } from "@/features/messages/presentation/actions/manage";
 import { WhatsAppIcon } from "@/shared/components/brand/social-icons";
@@ -34,7 +34,6 @@ const badge: Record<MessageStatus, { tone: "gold" | "green" | "muted"; label: st
 const PAGE_SIZE = 25;
 
 const chip = "inline-flex h-9 items-center rounded-control border px-3 text-sm transition-colors duration-150";
-const action = "inline-flex min-h-8 items-center text-sm text-muted underline-offset-4 transition-colors duration-150 hover:text-strong hover:underline";
 
 type PageProps = { searchParams: Promise<{ status?: string; page?: string }> };
 
@@ -72,9 +71,7 @@ export default async function MessagesPage({ searchParams }: PageProps) {
         actions={
           hasNew ? (
             <form action={markAllRead}>
-              <button type="submit" className="inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-strong">
-                Mark all as read
-              </button>
+              <QuietSubmit className="text-primary hover:text-primary-strong">Mark all as read</QuietSubmit>
             </form>
           ) : undefined
         }
@@ -151,9 +148,7 @@ export default async function MessagesPage({ searchParams }: PageProps) {
                     <form key={next.status} action={setMessageStatus}>
                       <input type="hidden" name="id" value={m.id} />
                       <input type="hidden" name="status" value={next.status} />
-                      <button type="submit" className={action}>
-                        {next.label}
-                      </button>
+                      <QuietSubmit>{next.label}</QuietSubmit>
                     </form>
                   ))}
                   <form action={deleteMessage} className="ml-auto">

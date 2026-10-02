@@ -6,8 +6,7 @@ import { DashboardNav, type DashboardSection } from "@/features/dashboard/presen
 import { Container } from "@/shared/components/ui/container";
 import { eyebrowClasses } from "@/shared/components/ui/section-heading";
 
-// Sections that exist so far (the rest are added as they're built).
-const AVAILABLE: DashboardSection[] = ["overview", "messages", "settings"];
+const AVAILABLE: DashboardSection[] = ["overview", "messages", "films", "services", "prints", "blogs", "reviews", "pages", "root-files", "file-manager", "settings"];
 
 export default async function ProtectedDashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { supabase, user } = await requireAdmin();

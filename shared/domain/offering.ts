@@ -6,20 +6,19 @@ import type { ImageAsset } from "@/shared/domain/image";
  * inquiry. Each feature extends it with its own fields.
  */
 
-/** Lucide icon names used by offerings; resolved in shared/components/content/offering-icon.tsx. */
-export type OfferingIcon =
-  | "Heart"
-  | "Clapperboard"
-  | "Flower2"
-  | "Flame"
-  | "Users"
-  | "IdCard"
-  | "PartyPopper"
-  | "BookHeart"
-  | "Frame"
-  | "Image"
-  | "Printer"
-  | "BookImage";
+/**
+ * Lucide icons an offering can use (the dashboard's icon picker); resolved in
+ * shared/components/content/offering-icon.tsx. Keep in step with the database check
+ * (supabase/migrations/0002_more_offering_icons.sql).
+ */
+export const OFFERING_ICONS = [
+  "Heart", "Clapperboard", "Flower2", "Flame", "Users", "IdCard", "PartyPopper", "BookHeart",
+  "Frame", "Image", "Printer", "BookImage", "Camera", "Aperture", "Film", "Video",
+  "Baby", "Gift", "Music", "Drum", "Cake", "Gem", "Crown", "HandHeart",
+  "Images", "Album", "Landmark", "GraduationCap", "Mountain", "Sunrise", "ScanFace", "Smile",
+] as const;
+
+export type OfferingIcon = (typeof OFFERING_ICONS)[number];
 
 /** A block of the detail page: an H2 with a paragraph and/or a list. */
 export type ContentSection = {

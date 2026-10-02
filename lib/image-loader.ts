@@ -22,6 +22,8 @@ const UPLOAD_WIDTHS = [480, 800, 1280];
 
 export default function imageLoader({ src, width }: { src: string; width: number; quality?: number }) {
   const upload = UPLOAD.exec(src);
+  // "…/<name>-1280.webp" is already one of the sizes (a pasted file link): leave it alone.
+  if (upload && /-(480|800|1280)$/.test(upload[2])) return src;
   if (upload) return `${upload[1]}/${upload[2]}-${UPLOAD_WIDTHS.find((w) => w >= width) ?? 1280}.webp`;
   const match = PHOTO.exec(src);
   if (!match) return src;

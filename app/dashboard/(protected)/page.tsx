@@ -44,9 +44,9 @@ export default async function DashboardOverviewPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="New messages" value={newMessages} note={newMessages ? "Waiting for a reply" : "All caught up"} href={routes.dashboardMessages("new")} />
-        <Stat label="Films" value={films} note={[uncurated && `${uncurated} to curate`, hiddenFilms && `${hiddenFilms} hidden`].filter(Boolean).join(" · ") || "On the site"} />
-        <Stat label="Services · Prints" value={`${services} · ${prints}`} note="Published" />
-        <Stat label="Blog posts" value={published} note={drafts ? `${drafts} draft${drafts === 1 ? "" : "s"}` : "Published"} />
+        <Stat label="Films" value={films} note={[uncurated && `${uncurated} to curate`, hiddenFilms && `${hiddenFilms} hidden`].filter(Boolean).join(" · ") || "On the site"} href={uncurated ? `${routes.dashboardSection("films")}?view=uncurated` : routes.dashboardSection("films")} />
+        <Stat label="Services · Prints" value={`${services} · ${prints}`} note="Published" href={routes.dashboardSection("services")} />
+        <Stat label="Blog posts" value={published} note={drafts ? `${drafts} draft${drafts === 1 ? "" : "s"}` : "Published"} href={routes.dashboardSection("blogs")} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]">

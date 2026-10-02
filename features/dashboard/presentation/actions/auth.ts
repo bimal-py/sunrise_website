@@ -36,3 +36,17 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect(routes.dashboardLogin());
 }
+
+/** Settings → Account: change the signed-in admin's password. */
+export async function changePassword(_prev: { status: "idle" | "success" | "error"; message?: string }, formData: FormData) {
+  const supabase = await createServerSupabase();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (isAdmin !== true) return { status: "error" as const, message: "Sign in again first." };
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 10) return { status: "error" as const, message: "Use at least 10 characters." };
+  if (password !== confirm) return { status: "error" as const, message: "The two passwords don't match." };
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { status: "error" as const, message: error.message };
+  return { status: "success" as const, message: "Password changed. Use it next time you sign in." };
+}

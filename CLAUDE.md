@@ -264,17 +264,15 @@ Terms: विवाह = wedding · पास्नी = pasni (rice feeding) ·
 
 ## 6. Films (YouTube)
 
-```
-python3 scripts/fetch-youtube.py      # RSS feed (latest 15) merged into generated/videos.json + thumbnails
-python3 scripts/optimize-images.py    # web sizes + blur + share images
-```
-
-- The feed only lists the newest 15, so the script **merges**; older videos are added by id in
-  `data/films/channel.json` `extraVideoIds`.
-- `data/films/curation.json` (hand-edited): site title, `category` (weddings | ceremonies | culture), `place`,
-  `featured` (home first), `hidden`. Keep couples' names as the studio spelled them. Uncurated uploads get
-  a tidied YouTube title and a guessed category: curate them.
-- Film slugs come from the curated title: **once live, don't rename a film without a redirect.**
+- Films live in the `films` table. **Dashboard → Films → Sync from YouTube** reads the channel's public feed (its
+  newest 15; channel id in Settings) and adds new uploads with a tidied title, a guessed category, a thumbnail built
+  like every photo (black bars trimmed) and `curated = false` ("Needs curating"); 6 per click. Older uploads:
+  **Add by link** (oEmbed title + the watch page's date). Saving a film marks it curated.
+- Curate: site title (keep couples' names as the studio spelled them), category (weddings | ceremonies | culture),
+  place, featured (home first), hidden. Renaming a slug adds a redirect automatically; deleting sends the old
+  address to /films.
+- `scripts/fetch-youtube.py` / `data/films/*.json` / `features/films/data/generated/` only feed the offline
+  fallback (no Supabase env) now; `scripts/optimize-images.py` still builds the brand assets.
 - `cmmLJ-wB324` ("RAPAKOT TIRSUL", rotated thumbnail) is hidden pending the owner.
 - Facebook has no public feed; posting there stays manual until the Supabase dashboard exists.
 
@@ -290,9 +288,11 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
 - **Photos:** the studio's own work only (film stills, and its photos once supplied), credited under blog
   covers ("Sunrise Photo Studio, from the film …" + link). Never stock, never AI-generated. People in
   photos are the studio's clients: remove on request (the privacy page promises this).
-- Blog frontmatter: `title, summary, publishedAt, tags, cover, coverAlt, coverCredit, coverCreditUrl,
-  featured?, updatedAt?, draft?` (+ `coverLicense*` for non-studio photos). `##`/`###` headings build
-  "On this page". Cultural facts (rituals, instruments) are phrased as "usually / in many families".
+- Blog posts are written in the dashboard (Blogs): MDX body (`##`/`###` build "On this page"; Nepali inside
+  `<Ne>`; photos inserted with the Photo button get the pre-built sizes via the MDX `img` component), status
+  draft/published, dates, topics (English, tidied), cover + alt (required with a cover) + credit, SEO fields.
+  Reading time and headings are computed on save; a body that doesn't compile can't be saved. Drafts have a
+  dashboard preview. Cultural facts (rituals, instruments) are phrased as "usually / in many families".
 
 ## 8. SEO (every route)
 
@@ -312,10 +312,12 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
 
 ## 9. Performance
 
-- Server components by default. Client components only: `FloatingNav`, `YouTubePlayer` (click-to-play
+- Server components by default. Client components only: `FloatingNav`, `NavProgress` (the 2px gold top bar on
+  navigation and dashboard saves, no glow; `useProgressWhile(busy)` reports work), `YouTubePlayer` (click-to-play
   facade, youtube-nocookie), `BookingForm`, `SplashScreen` (session/skip only), `Carousel`, `Clapper`,
   `SceneLight` / `PendantLamp` / `FilmLight` (light switch, lamp swing, light tilt), `TocNav` (scroll-spy),
-  `BlogSearch` (debounced `?q=`), `error.tsx`. No animation/carousel/lightbox libraries.
+  `BlogSearch`, `ListFilterSync` / `PagedGrid` (index filters and paging), `error.tsx`, and the dashboard's form
+  widgets. No animation/carousel/lightbox libraries.
 - Images are **pre-built, never resized on request**: originals in `assets/images/{blog,films}/` →
   `scripts/optimize-images.py` → `public/images/<collection>/<name>-{480,800,1280}.webp` + `og/<name>.jpg`
   + `features/*/data/generated/images.json`. `next/image` uses `lib/image-loader.ts`. Always pass `sizes`,
@@ -323,8 +325,9 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
   cached for a year: **never overwrite an image with a different picture; use a new name.**
 - Brand: `assets/brand/sunrise-logo.png` (2000px original) → `public/brand/logo-{80,160}.png`,
   `logo-512.jpg`, `og-default.jpg`, and `app/icon.png`, `apple-icon.png`, `favicon.ico`.
-- Analytics: none yet. `SiteAnalytics` renders Microsoft Clarity only when `siteConfig.clarityId` is set
-  and `VERCEL_ENV === "production"`; update `/privacy` if that changes.
+- Analytics: Microsoft Clarity (id in Settings → Search and sharing; `yrjzzytmzi` since 2026-10-03), rendered by
+  `SiteAnalytics` in the public layout only (never the dashboard) when `VERCEL_ENV === "production"`. The privacy
+  page's "Visitor statistics" section shows while an id is set; keep it true to what loads.
 
 ## 10. Workflow and verification
 
@@ -366,5 +369,16 @@ python3 scripts/optimize-images.py    # web sizes + blur + share images
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only:
   enquiries), optional `REVALIDATE_SECRET`, `CONTACT_HASH_SALT`, `RESEND_API_KEY` + `CONTACT_NOTIFICATION_TO`
   (+ `CONTACT_NOTIFICATION_FROM`) for an email per enquiry. `SUPABASE_DB_URL` is for local psql only.
-- **Dashboard sections:** Overview, Messages, Settings (phase 1, 2026-10-01). Next: Films (+ YouTube sync), Services,
-  Prints, Blogs, Reviews, Pages (copy + SEO), Root Files, File Manager, Redirects.
+- **Dashboard sections** (like the portfolio's, with Sunrise's modules): Overview, Messages, Films (sync, add by
+  link, curate), Services, Prints (icon picker, sections/FAQ/option editors, film-still pickers, darkroom mock-up),
+  Blogs (MDX editor, preview), Reviews, Pages (copy + SEO per page), Root Files (+ IndexNow), File Manager
+  (Storage), Settings (Studio · Redirects · Account, "Refresh every page" for direct DB edits). Lists that grow page
+  on the server (`Pager`, 20–25 per page). Saving a public item calls `updateTag` for its collection only, and
+  `notifyIndexNow(paths)` when it's public. Admin accounts: rows in `public.admins` (the studio's and the developer's).
+- **Forms keep what was typed** when a save fails: `ActionForm` (and the contact/login forms) submit through
+  `keepValuesOnSubmit` (`shared/hooks/use-keep-values-submit.ts`), skipping React 19's automatic form reset.
+- **Root files** (`/<name>.<ext>`: Search Console/Bing verification, ads.txt, the IndexNow key) are served by
+  `app/api/root-files/[name]` through a `fallback` rewrite in `next.config.ts` (in-memory cache, no data-cache
+  reads; unknown names get a plain 404). **Redirects:** old film/service/print/post slugs redirect at once from the
+  detail pages; any other old address comes from `next.config.ts` `redirects()` (read at build), so it starts working
+  after the next deploy.
