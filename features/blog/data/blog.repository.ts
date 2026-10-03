@@ -1,10 +1,8 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
-import { compileMDX } from "next-mdx-remote/rsc";
-import rehypeSlug from "rehype-slug";
-import remarkGfm from "remark-gfm";
 import { TAG } from "@/lib/cache/tags";
+import { compileSafeMdx } from "@/lib/mdx/compile";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { readClient } from "@/lib/supabase/read-client";
 import type { PostRow } from "@/lib/supabase/types";
@@ -122,11 +120,7 @@ export const blogRepository: BlogRepository = {
     if (!preview) return null;
     const stored = await loadBody(slug);
     if (!stored) return null;
-    const { content } = await compileMDX({
-      source: stored.body,
-      components: mdxComponents,
-      options: { mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins: [rehypeSlug] } },
-    });
+    const { content } = await compileSafeMdx(stored.body, { components: mdxComponents, slugs: true });
     return { ...preview, headings: stored.headings, content };
   },
 

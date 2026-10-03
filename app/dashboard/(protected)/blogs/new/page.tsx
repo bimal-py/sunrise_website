@@ -1,23 +1,22 @@
 import type { Metadata } from "next";
-import { routes } from "@/lib/routes";
 import { requireAdmin } from "@/features/dashboard/data/auth";
-import { PageHeader, Panel, rowLinkClass } from "@/features/dashboard/presentation/components/ui";
-import { PostForm } from "@/features/blog/presentation/components/post-form";
+import { DashboardPageHeader } from "@/features/dashboard/presentation/components/ui/dashboard-page-header";
+import { blankPost, PostForm } from "@/features/blog/presentation/components/post-form";
 
-export const metadata: Metadata = { title: "New post" };
+export const metadata: Metadata = { title: "Create a new blog" };
 
 export default async function NewPostPage() {
   await requireAdmin();
-  const blank = {
-    id: "", slug: "", title: "", summary: "", body: "", status: "draft" as const, published_at: null, updated_on: null, author: "", tags: [], language: "en" as const,
-    featured: false, cover: null, cover_alt: "", cover_credit: "", cover_credit_url: "", cover_license: "", cover_license_url: "", seo_title: "", seo_description: "",
-  };
+  // The post's id is made here, so pressing Create twice (or again after a lost reply) saves one post, not two.
+  const id = crypto.randomUUID();
   return (
-    <>
-      <PageHeader eyebrow="Blogs" title="New post" description="It's saved as a draft until you set the status to Published." actions={<a href={routes.dashboardSection("blogs")} className={rowLinkClass}>← All posts</a>} />
-      <Panel>
-        <PostForm post={blank} />
-      </Panel>
-    </>
+    <div className="grid gap-8">
+      <DashboardPageHeader
+        eyebrow="Blogs"
+        title="Create a new blog"
+        description="Write the guide here, then publish it when the summary, cover and text are ready. It stays a private draft until then."
+      />
+      <PostForm post={blankPost(id)} mode="create" />
+    </div>
   );
 }

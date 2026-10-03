@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { blogRepository } from "@/features/blog/data/blog.repository";
 import { filmRepository } from "@/features/films/data/films.repository";
 import { filmDescription } from "@/features/films/domain/labels";
+import { merchandiseRepository } from "@/features/merchandise/data/merchandise.repository";
+import { largestPhoto } from "@/features/merchandise/presentation/lib/photos";
 import { printRepository } from "@/features/prints/data/prints.repository";
 import { serviceRepository } from "@/features/services/data/services.repository";
 import { getPage } from "@/features/site/data/pages.repository";
@@ -15,7 +17,7 @@ import { routes } from "@/lib/routes";
 // portfolio's statically cached sitemap went stale on Vercel.
 export const dynamic = "force-dynamic";
 
-const PAGE_KEYS: PageKey[] = ["home", "services", "prints", "films", "blogs", "about", "contact", "privacy"];
+const PAGE_KEYS: PageKey[] = ["home", "services", "prints", "films", "blogs", "merchandise", "about", "contact", "privacy"];
 
 const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" };
 
@@ -38,12 +40,13 @@ function newest(...dates: (string | null | undefined)[]): string | undefined {
 // Canonical, indexable URLs only: no filtered ?category= / ?tag= views. Each page is dated
 // by its own last change, an index by its newest item (or its copy, if edited later).
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [site, services, prints, films, posts, pages] = await Promise.all([
+  const [site, services, prints, films, posts, products, pages] = await Promise.all([
     getSiteSettings(),
     serviceRepository.list(),
     printRepository.list(),
     filmRepository.list(),
     blogRepository.listPosts(),
+    merchandiseRepository.listProducts(),
     Promise.all(PAGE_KEYS.map((key) => getPage(key))),
   ]);
   const edited = Object.fromEntries(pages.map((page) => [page.key, page.updatedAt])) as Record<PageKey, string | null>;
@@ -51,6 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const printDates = prints.map((p) => p.updatedAt);
   const filmDates = films.map((f) => f.updatedAt ?? f.publishedAt);
   const postDates = posts.map((p) => p.updatedAt ?? p.publishedAt);
+  const productDates = products.map((p) => p.updatedAt);
 
   return [
     { url: url(routes.home()), lastModified: newest(edited.home, ...filmDates, ...serviceDates, ...printDates), changeFrequency: "weekly", priority: 1 },
@@ -82,6 +86,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: newest(p.updatedAt, p.publishedAt),
       priority: 0.6,
       ...(p.coverImage && { images: [url(p.coverImage.ogImage)] }),
+    })),
+    // The shop is listed once it has something in it (an empty one is noindex).
+    ...(products.length > 0
+      ? [{ url: url(routes.merchandise()), lastModified: newest(edited.merchandise, ...productDates), changeFrequency: "weekly" as const, priority: 0.7 }]
+      : []),
+    ...products.map((p) => ({
+      url: url(routes.product(p.slug)),
+      lastModified: newest(p.updatedAt),
+      priority: 0.6,
+      ...(p.images.length > 0 && { images: p.images.map((image) => url(largestPhoto(image).src)) }),
     })),
     { url: url(routes.about()), lastModified: newest(edited.about), changeFrequency: "yearly", priority: 0.5 },
     { url: url(routes.contact()), lastModified: newest(edited.contact), changeFrequency: "yearly", priority: 0.8 },

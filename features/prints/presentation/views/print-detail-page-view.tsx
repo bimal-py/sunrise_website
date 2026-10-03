@@ -37,7 +37,7 @@ export async function PrintDetailPageView({ slug }: { slug: string }) {
         <Breadcrumbs crumbs={crumbs} />
 
         <header className="mt-6 max-w-3xl">
-          <OfferingIcon name={print.icon} className="h-6 w-6" />
+          <OfferingIcon name={print.icon} svg={print.iconSvg} className="h-6 w-6" />
           <h1 className="mt-4 text-[40px] sm:text-[52px]">{print.name}</h1>
           <p lang="ne" className="mt-1 text-lg text-foreground">
             {print.nameNe}

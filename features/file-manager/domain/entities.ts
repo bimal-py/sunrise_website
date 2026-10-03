@@ -6,16 +6,6 @@ import { slugify } from "@/lib/utils/slug";
  * "media" holds the photos the dashboard processed (lib/media/process-image.ts), "files"
  * anything else (PDFs, price lists…). Pure helpers only; Storage calls live in data/.
  */
-export type BucketId = "media" | "files";
-
-export const BUCKETS: { id: BucketId; label: string }[] = [
-  { id: "media", label: "Photos" },
-  { id: "files", label: "Files" },
-];
-
-export function bucketLabel(bucket: BucketId): string {
-  return bucket === "media" ? "Photos" : "Files";
-}
 
 /**
  * One photo folder per part of the site (MEDIA_COLLECTIONS in lib/media/process-image.ts).
@@ -28,6 +18,7 @@ export const PHOTO_FOLDERS: Record<MediaCollection, string> = {
   site: "The default share image and other studio-wide photos",
   pages: "Photos on the fixed pages (about, contact…)",
   offerings: "Photos for services and prints",
+  products: "Merchandise photos",
 };
 
 export function isPhotoFolder(name: string): name is MediaCollection {
@@ -38,56 +29,8 @@ export function isPhotoFolder(name: string): name is MediaCollection {
 export const PAGE_SIZE = 100;
 /** Supabase's stand-in object that keeps an empty folder alive. Never shown. */
 export const PLACEHOLDER = ".emptyFolderPlaceholder";
-/** Each photo's 1200×630 link-preview image lives in "<collection>/og/". */
-export const SHARE_FOLDER = "og";
-/** The sizes every upload gets (IMAGE_WIDTHS in lib/media/process-image.ts, a server-only module). */
-export const STANDARD_WIDTHS = [480, 800, 1280];
 /** The "files" bucket's per-file limit (26214400 bytes). */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
-
-export type FolderEntry = { name: string; path: string };
-
-export type FileEntry = {
-  name: string;
-  /** Path inside the bucket, e.g. "price-lists/albums-2026.pdf". */
-  path: string;
-  size: number;
-  type: string;
-  updatedAt: string | null;
-  /** Public URL (both buckets are public). */
-  url: string;
-};
-
-/** One folder's contents as loaded so far. */
-export type Listing = {
-  folders: FolderEntry[];
-  files: FileEntry[];
-  /** Objects fetched, the placeholder included: the next page's offset. */
-  rawCount: number;
-  hasMore: boolean;
-  /** The folder exists only through its placeholder (so it can be removed when empty). */
-  placeholder: boolean;
-};
-
-/**
- * One processed photo: all the files that share its name, shown as one tile.
- * In "<collection>/" those are its sizes (<name>-480.webp, -800, -1280); in
- * "<collection>/og/" its share image (<name>.jpg).
- */
-export type Picture = {
-  collection: string;
-  name: string;
-  /** Widths found in the folder, ascending (empty in the og/ folder, where they aren't listed). */
-  widths: number[];
-  view: "sizes" | "share";
-  updatedAt: string | null;
-};
-
-// Same rules as the media table's checks (collection ~ '^[a-z0-9-]{1,40}$', name ~ '^[A-Za-z0-9_-]{1,120}$').
-const COLLECTION = /^[a-z0-9-]{1,40}$/;
-const NAME = /^[A-Za-z0-9_-]{1,120}$/;
-const SIZED = /^(.+)-(\d{2,4})\.webp$/;
-const SHARE = /^(.+)\.jpg$/;
 
 /** "a//b/../c/" → "a/b/c": a folder path from the URL, without empty or relative parts. */
 export function cleanPath(raw: string): string {
@@ -105,57 +48,9 @@ export function parentPath(path: string): string {
   return path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
 }
 
-/** Whether a Photos folder holds processed photos: a collection ("films") or its share images ("films/og"). */
-export function photoFolderOf(prefix: string): { collection: string; view: Picture["view"] } | null {
-  const parts = prefix.split("/").filter(Boolean);
-  if (!parts[0] || !COLLECTION.test(parts[0])) return null;
-  if (parts.length === 1) return { collection: parts[0], view: "sizes" };
-  if (parts.length === 2 && parts[1] === SHARE_FOLDER) return { collection: parts[0], view: "share" };
-  return null;
-}
-
-/** Groups a Photos folder's files into one picture per name; anything else stays a plain file. */
-export function groupPictures(files: FileEntry[], prefix: string): { pictures: Picture[]; others: FileEntry[] } {
-  const folder = photoFolderOf(prefix);
-  if (!folder) return { pictures: [], others: files };
-  const byName = new Map<string, Picture>();
-  const others: FileEntry[] = [];
-  for (const file of files) {
-    const match = (folder.view === "sizes" ? SIZED : SHARE).exec(file.name);
-    if (!match || !NAME.test(match[1])) {
-      others.push(file);
-      continue;
-    }
-    const picture = byName.get(match[1]) ?? { collection: folder.collection, name: match[1], widths: [], view: folder.view, updatedAt: null };
-    if (folder.view === "sizes") picture.widths.push(Number(match[2]));
-    if (file.updatedAt && (!picture.updatedAt || file.updatedAt > picture.updatedAt)) picture.updatedAt = file.updatedAt;
-    byName.set(match[1], picture);
-  }
-  const pictures = [...byName.values()];
-  for (const picture of pictures) picture.widths.sort((a, b) => a - b);
-  return { pictures, others };
-}
-
-/** A just-uploaded photo that isn't in the loaded part of the listing yet (it was given every standard size). */
-export function uploadedPicture(collection: string, name: string): Picture {
-  return { collection, name, widths: [...STANDARD_WIDTHS], view: "sizes", updatedAt: new Date().toISOString() };
-}
-
 /** "…/films/bride-groom-k3j9x2.webp" (an upload's src) → "bride-groom-k3j9x2". */
 export function nameFromSrc(src: string): string {
   return decodeURIComponent(src.slice(src.lastIndexOf("/") + 1)).replace(/\.webp$/, "");
-}
-
-/** Adds a "Show more" page to what's loaded (skipping anything already there, should the folder have shifted). */
-export function mergeListings(loaded: Listing, next: Listing): Listing {
-  const seen = new Set([...loaded.folders, ...loaded.files].map((entry) => entry.path));
-  return {
-    folders: [...loaded.folders, ...next.folders.filter((folder) => !seen.has(folder.path))],
-    files: [...loaded.files, ...next.files.filter((file) => !seen.has(file.path))],
-    rawCount: loaded.rawCount + next.rawCount,
-    hasMore: next.hasMore,
-    placeholder: loaded.placeholder || next.placeholder,
-  };
 }
 
 /** "Price List (2026).PDF" → { base: "price-list-2026", ext: ".pdf" }: a readable name that's safe in a link. */
@@ -198,4 +93,111 @@ export function fileKind(file: { type: string; name: string }): FileKind {
   if (["xls", "xlsx", "csv", "ods"].includes(ext)) return "sheet";
   if (["zip", "rar", "7z", "gz"].includes(ext)) return "archive";
   return "other";
+}
+
+// ---------------------------------------------------------------------------------------------
+// Any bucket, read on the server (features/file-manager/data/storage.repository.ts): what the
+// file manager and the file picker list. Serializable, so server actions can return them.
+// ---------------------------------------------------------------------------------------------
+
+/** The two buckets the site itself serves from: they can't be deleted or made private. */
+export const PROTECTED_BUCKETS = ["media", "files"] as const;
+
+export function isProtectedBucket(name: string): boolean {
+  return (PROTECTED_BUCKETS as readonly string[]).includes(name);
+}
+
+/** Bucket names Storage accepts (and that are safe in a link). */
+export const BUCKET_NAME = /^[a-z0-9][a-z0-9_-]{1,62}$/;
+
+export type StorageBucket = {
+  id: string;
+  name: string;
+  /** "Photos" for media, "Files" for files, else the name. */
+  label: string;
+  /** Public buckets serve their files by link without a token. */
+  public: boolean;
+  /** media and files: no delete, no making private. */
+  protected: boolean;
+  createdAt: string | null;
+  /** Allowed media types (null = any). */
+  allowedMimeTypes: string[] | null;
+  /** Largest file in bytes (null = no limit). */
+  fileSizeLimit: number | null;
+};
+
+export type StorageFolder = {
+  type: "folder";
+  name: string;
+  /** Full path inside the bucket ("price-lists/2026"). */
+  path: string;
+  /** What a photo folder is for (media collections only). */
+  description?: string;
+};
+
+export type StorageFile = {
+  type: "file";
+  name: string;
+  path: string;
+  size: number;
+  mimeType: string | null;
+  updatedAt: string | null;
+  /** Public link (a private bucket's link only works with a token). */
+  publicUrl: string;
+  kind: FileKind;
+};
+
+/**
+ * A processed photo in the media library (a `media` row): its sizes, share image and blur
+ * are already built, so it can be used as it is (`image` is what a photo field stores).
+ */
+export type StoragePicture = {
+  type: "picture";
+  id: string;
+  collection: string;
+  name: string;
+  /** "<collection>/<name>", unique across the library. */
+  path: string;
+  image: { src: string; width: number; height: number; blurDataURL: string; ogImage: string };
+  alt: string;
+  /** False for the photos shipped with the site (/images/…), which live in the code, not in Storage. */
+  inStorage: boolean;
+  bytes: number;
+  createdAt: string | null;
+  /** The sizes that exist ("-480.webp", …). */
+  widths: number[];
+  /** Small (480px) version, for tiles. */
+  thumbUrl: string;
+  /** 1280px version, to open. */
+  fullUrl: string;
+};
+
+export type StorageEntry = StorageFolder | StorageFile | StoragePicture;
+
+/** One page of a folder. */
+export type StorageListing = {
+  bucket: string;
+  prefix: string;
+  folders: StorageFolder[];
+  files: StorageFile[];
+  pictures: StoragePicture[];
+  /** Offset of the next page ("Show more"), or null when everything is loaded. */
+  nextOffset: number | null;
+  /** The folder exists only through its placeholder object (so it can be removed when empty). */
+  placeholder: boolean;
+};
+
+/** The sized files of a processed photo, from its stored src (Storage upload or a photo shipped in /images). */
+export function pictureUrl(src: string, width: number): string {
+  return src.replace(/\.webp$/, `-${width}.webp`);
+}
+
+/** Whether a media type is allowed by a bucket's list ("image/*" style wildcards included). */
+export function typeAllowed(allowed: string[] | null, type: string): boolean {
+  if (!allowed || allowed.length === 0) return true;
+  const value = type.toLowerCase();
+  return allowed.some((rule) => {
+    const pattern = rule.trim().toLowerCase();
+    return pattern.endsWith("/*") ? value.startsWith(pattern.slice(0, -1)) : value === pattern;
+  });
 }

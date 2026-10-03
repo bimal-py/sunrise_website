@@ -2,9 +2,19 @@ import type { Film, FilmCategory } from "@/features/films/domain/entities";
 import { slugify } from "@/lib/utils/slug";
 import type { BuiltImageDto, FilmCurationDto, YouTubeVideoDto } from "./dto";
 
-/** Uncurated uploads: "x weds y" is a wedding, anything else a ceremony until someone files it. */
+const WEDDING = /\bweds?\b|wedding|marriage|bibaha|biwaha|विवाह|बिबाह|बिहे/i;
+const CEREMONY = /puja|pooja|पुजा|पूजा|bart?abandha|bratabandha|ब्रतबन्ध|बर्तबन्ध|pasni|पास्नी|rice feeding|chaurasi|चौरासी|kul ?puja|कुलपूजा|naming|nwaran|न्वारान|janku|जन्कु/i;
+const CULTURE = /mela|मेला|sabha|सभा|programm?e?\b|festival|महोत्सव|dance|नाच|competition|प्रतियोगिता|school|विद्यालय|tournament|volleyball|भलिबल|rally|teej|tij|तिज|मन्दिर|temple|shilanyas|शिलान्यास|panchebaja|पञ्चे ?बाजा|naumati|नौमती|गाउँपालिका|गाँउपालिका|गाउँपालीका/i;
+
+/**
+ * Uncurated uploads: "x weds y" is a wedding, a puja, bratabandha or pasni a ceremony, a
+ * mela, programme or competition culture; anything else a ceremony until someone files it.
+ */
 export function guessCategory(title: string): FilmCategory {
-  return /\bweds?\b|wedding|bibaha|विवाह/i.test(title) ? "weddings" : "ceremonies";
+  if (WEDDING.test(title)) return "weddings";
+  if (CEREMONY.test(title)) return "ceremonies";
+  if (CULTURE.test(title)) return "culture";
+  return "ceremonies";
 }
 
 /** "SAGAR WEDS ASMITA" → "Sagar weds Asmita" (only used when curation has no title). */

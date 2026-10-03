@@ -9,11 +9,29 @@ import type { ImageAsset } from "@/shared/domain/image";
 
 /** Widths the image loader picks from (keep in sync with lib/image-loader.ts and next.config.ts). */
 export const IMAGE_WIDTHS = [480, 800, 1280] as const;
+/**
+ * Product photos also get "<name>-1920.webp" for the zoom on the product page, when the photo
+ * is wider than 1280px (so it exists exactly when `collection === "products" && width > 1280`).
+ * The image loader never picks it; the zoom asks for it by name.
+ */
+export const ZOOM_WIDTH = 1920;
 export const MEDIA_BUCKET = "media";
-export const MEDIA_COLLECTIONS = ["blog", "films", "founder", "site", "pages", "offerings"] as const;
+export const MEDIA_COLLECTIONS = ["blog", "films", "founder", "site", "pages", "offerings", "products"] as const;
 export type MediaCollection = (typeof MEDIA_COLLECTIONS)[number];
 
 const YEAR = "31536000";
+/** A decoded photo bigger than this (in pixels) is refused rather than risking the server's memory. */
+const MAX_INPUT_PIXELS = 70_000_000;
+/**
+ * Storage answers `X-Robots-Tag: none` for every file unless the upload sets one, which keeps
+ * photos out of Google Images. Files are cached for a year, so it has to be right at upload.
+ */
+export const INDEXABLE = { "x-robots-tag": "all" } as const;
+
+/** The sizes a processed photo has (see ZOOM_WIDTH). */
+export function pictureWidths(collection: string, width: number): number[] {
+  return collection === "products" && width > IMAGE_WIDTHS[IMAGE_WIDTHS.length - 1] ? [...IMAGE_WIDTHS, ZOOM_WIDTH] : [...IMAGE_WIDTHS];
+}
 
 export function storagePublicUrl(path: string): string {
   return `${supabaseUrl}/storage/v1/object/public/${MEDIA_BUCKET}/${path}`;
@@ -27,8 +45,9 @@ export function uniqueImageName(fileName: string): string {
 
 /**
  * Builds what the site needs from one photo, the same way scripts/optimize-images.py does
- * for files in /public: 480/800/1280px WebP (never upscaled), a 1200×630 JPEG for link
- * previews and a 16px blur placeholder. Uploads them to Storage (as the signed-in admin)
+ * for files in /public: 480/800/1280px WebP (never upscaled; products also 1920px for the
+ * zoom), a 1200×630 JPEG for link previews and a 16px blur placeholder. Uploads them to
+ * Storage (as the signed-in admin; never over an existing file, indexable by search engines)
  * and records the picture in the media library.
  */
 export async function processImage(
@@ -37,14 +56,14 @@ export async function processImage(
   { collection, name, alt = "", trimBars = false }: { collection: MediaCollection; name: string; alt?: string; trimBars?: boolean },
 ): Promise<ImageAsset & { mediaId: string }> {
   // Respect the camera's orientation; optionally cut black letterbox bars (YouTube thumbnails).
-  let image = sharp(input, { failOn: "error" }).rotate();
+  let image = sharp(input, { failOn: "error", limitInputPixels: MAX_INPUT_PIXELS }).rotate();
   if (trimBars) image = sharp(await image.trim({ background: "#000000", threshold: 28 }).toBuffer());
   const source = await image.toBuffer({ resolveWithObject: true });
   const { width, height } = source.info;
   const base = sharp(source.data);
 
   const files: { path: string; body: Buffer; type: string }[] = [];
-  for (const target of IMAGE_WIDTHS) {
+  for (const target of pictureWidths(collection, width)) {
     const body = await base.clone().resize({ width: target, withoutEnlargement: true }).webp({ quality: 76, effort: 6 }).toBuffer();
     files.push({ path: `${collection}/${name}-${target}.webp`, body, type: "image/webp" });
   }
@@ -53,7 +72,7 @@ export async function processImage(
   const blur = await base.clone().resize(16, 16, { fit: "inside" }).webp({ quality: 40 }).toBuffer();
 
   for (const file of files) {
-    const { error } = await db.storage.from(MEDIA_BUCKET).upload(file.path, file.body, { contentType: file.type, cacheControl: YEAR, upsert: false });
+    const { error } = await db.storage.from(MEDIA_BUCKET).upload(file.path, file.body, { contentType: file.type, cacheControl: YEAR, upsert: false, headers: INDEXABLE });
     if (error) throw new Error(`Upload failed (${file.path}): ${error.message}`);
   }
 

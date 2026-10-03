@@ -36,6 +36,8 @@ export type Film = {
   seoDescription?: string;
   /** When the film's page last changed (sitemap lastmod). */
   updatedAt?: string | null;
+  /** Length in seconds, when the YouTube sync knows it (VideoObject duration). */
+  durationSeconds?: number | null;
   watchUrl: string;
   embedUrl: string;
 };

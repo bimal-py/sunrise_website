@@ -70,9 +70,19 @@ export async function AboutPageView() {
             <h2>Where to see our work</h2>
             <p>
               {firstYear ? `We've been publishing our films on YouTube since ${firstYear}. ` : ""}
-              Watch them on our <Link href={routes.films()}>films page</Link> or on our{" "}
-              <a href={site.social.youtube}>YouTube channel</a>, and follow new work on our{" "}
-              <a href={site.social.facebook}>Facebook page</a>.
+              Watch them on our <Link href={routes.films()}>films page</Link>
+              {site.social.youtube ? (
+                <>
+                  {" "}
+                  or on our <a href={site.social.youtube}>YouTube channel</a>
+                </>
+              ) : null}
+              {site.social.facebook ? (
+                <>
+                  , and follow new work on our <a href={site.social.facebook}>Facebook page</a>
+                </>
+              ) : null}
+              .
             </p>
           </div>
           <InquiryCard title="Visit or get in touch" message={`Hello ${site.name}, I'd like to ask about `} note={`${site.address.line}. WhatsApp is the quickest way to reach us.`} />

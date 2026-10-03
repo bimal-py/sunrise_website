@@ -35,6 +35,8 @@ export type Offering = {
   /** Nepali name, shown under the English one. */
   nameNe: string;
   icon: OfferingIcon;
+  /** An icon chosen in the dashboard (cleaned SVG markup, drawn as a mask); wins over `icon` when set. */
+  iconSvg?: string | null;
   /** One sentence: cards, meta description. */
   summary: string;
   /** Opening paragraphs of the detail page. */

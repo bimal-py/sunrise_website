@@ -108,8 +108,11 @@ export async function BlogPostPageView({ slug }: { slug: string }) {
               alt={post.coverImage.alt}
               width={post.coverImage.width}
               height={post.coverImage.height}
-              sizes="(min-width: 1152px) 1088px, 100vw"
-              priority
+              // Phones at 3x would pick the 1280 file for 100vw; 68vw keeps them on the 800 one.
+              sizes="(min-width: 1152px) 1088px, (min-width: 640px) 100vw, 68vw"
+              // The page's largest image: fetch it first (Next 16: instead of the deprecated `priority`).
+              loading="eager"
+              fetchPriority="high"
               placeholder="blur"
               blurDataURL={post.coverImage.blurDataURL}
               className="aspect-video w-full rounded-card border border-line object-cover"

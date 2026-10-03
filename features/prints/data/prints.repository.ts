@@ -16,6 +16,7 @@ export function rowToPrint(row: PrintRow): Print {
     name: row.name,
     nameNe: row.name_ne,
     icon: row.icon as OfferingIcon,
+    iconSvg: row.icon_svg ?? null,
     summary: row.summary,
     intro: row.intro,
     sections: row.sections,

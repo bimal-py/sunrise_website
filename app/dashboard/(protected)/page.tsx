@@ -1,96 +1,199 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CircleCheck, CircleDashed } from "lucide-react";
+import type { ReactNode } from "react";
 import { routes } from "@/lib/routes";
 import { formatDateTime } from "@/lib/utils/date";
 import { requireAdmin } from "@/features/dashboard/data/auth";
-import { PageHeader, Panel, rowLinkClass, Stat } from "@/features/dashboard/presentation/components/ui";
+import { DashboardCard, StatusBadge } from "@/features/dashboard/presentation/components/ui/dashboard-ui";
+import { messageSubject } from "@/features/messages/presentation/message-subject";
+import { SpriteButton } from "@/shared/components/ui/sprite-button";
 
 export const metadata: Metadata = { title: "Overview" };
+
+/** Supabase's free plan includes 1 GB of file storage; shown as a reference (raise it on a paid plan). */
+const FREE_TIER_STORAGE_BYTES = 1024 * 1024 * 1024;
+
+const panelLink = "font-mono text-[11px] uppercase tracking-[0.16em] text-primary underline-offset-4 transition-colors duration-150 hover:underline";
+
+function formatStorage(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${Math.round(bytes / 1024)} KB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+}
+
+const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
+
+/** A number tile, as on the portfolio (mono label, big serif number), linked to its list. */
+function Stat({ label, value, note, href }: { label: string; value: number; note?: string; href: string }) {
+  return (
+    <Link href={href} className="block min-w-0 rounded-card border border-line bg-surface p-4 transition-colors duration-150 hover:border-line-strong sm:p-5">
+      <p className="truncate font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{label}</p>
+      {/* Lining figures: Cormorant's default old-style 0 and 1 read as "o" and "I". */}
+      <p className="mt-3 font-display text-4xl font-semibold leading-none text-strong lining-nums tabular-nums">{value}</p>
+      {note ? <p className="mt-2 truncate text-xs text-muted">{note}</p> : null}
+    </Link>
+  );
+}
+
+function Panel({ title, link, children }: { title: string; link?: { href: string; label: string }; children: ReactNode }) {
+  return (
+    <DashboardCard className="min-w-0 p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-2xl font-semibold text-strong">{title}</h2>
+        {link ? (
+          <Link href={link.href} className={panelLink}>
+            {link.label}
+          </Link>
+        ) : null}
+      </div>
+      {children}
+    </DashboardCard>
+  );
+}
+
+/** A row in a "Latest" list: the title, then a muted line. */
+function Row({ title, detail, badge }: { title: string; detail: ReactNode; badge?: ReactNode }) {
+  return (
+    <li className="min-w-0 rounded-card border border-line bg-raised px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 truncate font-medium text-strong">{title}</p>
+        {badge}
+      </div>
+      <p className="mt-1 truncate text-sm text-muted">{detail}</p>
+    </li>
+  );
+}
 
 export default async function DashboardOverviewPage() {
   const { supabase } = await requireAdmin();
   const head = { count: "exact", head: true } as const;
   const n = (result: { count: number | null }) => result.count ?? 0;
 
-  const [newMessages, films, hiddenFilms, uncurated, services, prints, published, drafts, reviews, recent, settings] = await Promise.all([
-    supabase.from("messages").select("id", head).eq("status", "new").then(n),
-    supabase.from("films").select("youtube_id", head).eq("hidden", false).then(n),
-    supabase.from("films").select("youtube_id", head).eq("hidden", true).then(n),
-    supabase.from("films").select("youtube_id", head).eq("curated", false).then(n),
-    supabase.from("services").select("id", head).eq("published", true).then(n),
-    supabase.from("prints").select("id", head).eq("published", true).then(n),
-    supabase.from("posts").select("id", head).eq("status", "published").then(n),
-    supabase.from("posts").select("id", head).eq("status", "draft").then(n),
-    supabase.from("reviews").select("id", head).eq("published", true).then(n),
-    supabase.from("messages").select("id, name, occasion, created_at, status").order("created_at", { ascending: false }).limit(4),
-    supabase.from("site_settings").select("founder_name, google_site_verification, bing_site_verification, og_image, latitude").eq("id", 1).single(),
-  ]);
+  const [films, hiddenFilms, uncurated, services, prints, products, posts, drafts, reviews, newEnquiries, orders, newOrders, usage, latestPosts, latestMessages] =
+    await Promise.all([
+      supabase.from("films").select("youtube_id", head).eq("hidden", false).then(n),
+      supabase.from("films").select("youtube_id", head).eq("hidden", true).then(n),
+      supabase.from("films").select("youtube_id", head).eq("curated", false).then(n),
+      supabase.from("services").select("id", head).eq("published", true).then(n),
+      supabase.from("prints").select("id", head).eq("published", true).then(n),
+      supabase.from("products").select("id", head).eq("published", true).then(n),
+      supabase.from("posts").select("id", head).eq("status", "published").then(n),
+      supabase.from("posts").select("id", head).eq("status", "draft").then(n),
+      supabase.from("reviews").select("id", head).eq("published", true).then(n),
+      supabase.from("messages").select("id", head).eq("kind", "enquiry").eq("status", "new").then(n),
+      supabase.from("messages").select("id", head).eq("kind", "order").then(n),
+      supabase.from("messages").select("id", head).eq("kind", "order").eq("status", "new").then(n),
+      supabase.rpc("storage_usage"),
+      supabase.from("posts").select("id, title, slug, status, updated_at").order("updated_at", { ascending: false }).limit(4),
+      supabase.from("messages").select("id, name, kind, occasion, product_name, status, created_at").order("created_at", { ascending: false }).limit(4),
+    ]);
 
-  const s = settings.data;
-  const checks = [
-    { done: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY), label: "Contact form saves enquiries", hint: "Needs SUPABASE_SERVICE_ROLE_KEY on the server." },
-    { done: Boolean(s?.google_site_verification), label: "Google Search Console connected", hint: "Settings → Search and sharing (or upload Google's file in Root Files)." },
-    { done: Boolean(s?.bing_site_verification), label: "Bing Webmaster Tools connected", hint: "Settings → Search and sharing." },
-    { done: Boolean(s?.founder_name), label: "Founder shown on the home page", hint: "Settings → Founder." },
-    { done: Boolean(s?.og_image), label: "Default share image", hint: "Settings → Search and sharing." },
-    { done: s?.latitude !== null && s?.latitude !== undefined, label: "Map location for local search", hint: "Settings → Contact and address: latitude and longitude." },
-    { done: reviews > 0, label: "Real client reviews", hint: "Copied word for word from Facebook or Google, with a link." },
-  ];
+  const buckets = usage.data ?? [];
+  const totalBytes = buckets.reduce((sum, bucket) => sum + Number(bucket.bytes ?? 0), 0);
+  const fileCount = buckets.reduce((sum, bucket) => sum + Number(bucket.objects ?? 0), 0);
+  const storagePct = Math.min(100, (totalBytes / FREE_TIER_STORAGE_BYTES) * 100);
+  const section = routes.dashboardSection;
 
   return (
-    <>
-      <PageHeader eyebrow="Overview" title="Today at the studio" description="What's on the site, what needs a reply, and what would help people find you." />
+    <div className="grid gap-8">
+      {/* The overview has no header card (as on the portfolio); its heading is for screen readers. */}
+      <h1 className="sr-only">Overview</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="New messages" value={newMessages} note={newMessages ? "Waiting for a reply" : "All caught up"} href={routes.dashboardMessages("new")} />
-        <Stat label="Films" value={films} note={[uncurated && `${uncurated} to curate`, hiddenFilms && `${hiddenFilms} hidden`].filter(Boolean).join(" · ") || "On the site"} href={uncurated ? `${routes.dashboardSection("films")}?view=uncurated` : routes.dashboardSection("films")} />
-        <Stat label="Services · Prints" value={`${services} · ${prints}`} note="Published" href={routes.dashboardSection("services")} />
-        <Stat label="Blog posts" value={published} note={drafts ? `${drafts} draft${drafts === 1 ? "" : "s"}` : "Published"} href={routes.dashboardSection("blogs")} />
-      </div>
+      <section aria-label="On the site" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <Stat label="Films" value={films} href={section("films")} note={[uncurated && `${uncurated} to curate`, hiddenFilms && `${hiddenFilms} hidden`].filter(Boolean).join(" · ") || "On the site"} />
+        <Stat label="Services" value={services} href={section("services")} note="Published" />
+        <Stat label="Prints" value={prints} href={section("prints")} note="Published" />
+        <Stat label="Products" value={products} href={section("merchandise")} note="Published" />
+        <Stat label="Blogs" value={posts} href={section("blogs")} note={drafts ? `Published · ${plural(drafts, "draft")}` : "Published"} />
+        <Stat label="Reviews" value={reviews} href={section("reviews")} note="Published" />
+        <Stat label="New messages" value={newEnquiries} href={`${routes.dashboardMessages("new")}&type=enquiry`} note={newEnquiries ? "Waiting for a reply" : "All caught up"} />
+        <Stat label="Orders" value={orders} href={`${routes.dashboardMessages()}?type=order`} note={newOrders ? `${newOrders} new` : orders ? "None new" : "None yet"} />
+      </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <Panel title="Latest enquiries" actions={<Link href={routes.dashboardMessages()} className={rowLinkClass}>All messages</Link>}>
-          {recent.data && recent.data.length > 0 ? (
-            <ul className="divide-y divide-line">
-              {recent.data.map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-strong">{m.name}</p>
-                    <p className="truncate text-sm text-muted">{m.occasion || "Enquiry"}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    {m.status === "new" && <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">New</p>}
-                    <p className="font-mono text-xs text-muted">{formatDateTime(m.created_at)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+      <section className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Supabase storage" link={{ href: section("file-manager"), label: "Open files →" }}>
+          {usage.error ? (
+            <p className="mt-4 text-sm text-muted">Couldn&apos;t read how much storage is used ({usage.error.message}).</p>
           ) : (
-            <p className="text-sm text-muted">No enquiries yet. They arrive here from the contact page.</p>
+            <>
+              <p className="mt-4 font-display text-4xl font-semibold leading-none text-strong lining-nums">{formatStorage(totalBytes)}</p>
+              <p className="mt-2 text-sm text-muted">
+                {plural(fileCount, "file")} across {plural(buckets.length, "bucket")}
+              </p>
+              <div
+                role="meter"
+                aria-label="Storage used of the 1 GB free plan"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(storagePct)}
+                className="mt-4 h-2 w-full overflow-hidden rounded-full bg-raised"
+              >
+                <div className="h-full rounded-full bg-primary" style={{ width: `${storagePct}%` }} />
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted">
+                {storagePct.toFixed(1)}% of the 1&nbsp;GB free-plan limit · check{" "}
+                <a href="https://supabase.com/dashboard/project/_/settings/billing/usage" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-4 hover:underline">
+                  Supabase usage
+                </a>{" "}
+                for your exact plan and database quota.
+              </p>
+            </>
           )}
         </Panel>
 
-        <Panel title="Setup and search" description="Each of these helps people find and trust the studio.">
-          <ul className="flex flex-col gap-3">
-            {checks.map((check) => (
-              <li key={check.label} className="flex items-start gap-3">
-                {check.done ? <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden /> : <CircleDashed className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden />}
-                <div>
-                  <p className={`text-sm font-medium ${check.done ? "text-foreground" : "text-strong"}`}>
-                    {check.label}
-                    <span className="sr-only">{check.done ? " (done)" : " (to do)"}</span>
-                  </p>
-                  {!check.done && <p className="text-xs text-muted">{check.hint}</p>}
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-5 border-t border-line pt-4 text-xs text-muted">
-            Edit studio details in <Link href={routes.dashboardSection("settings")} className="text-primary hover:underline">Settings</Link>.
-          </p>
+        <DashboardCard className="min-w-0 p-6">
+          <h2 className="font-mono text-[11px] font-normal uppercase tracking-[0.18em] text-primary">Quick actions</h2>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <SpriteButton href={routes.dashboardNew("blogs")}>New post</SpriteButton>
+            <SpriteButton href={routes.dashboardNew("films")} variant="secondary">
+              Add film
+            </SpriteButton>
+            <SpriteButton href={`${section("films")}#sync`} variant="secondary">
+              Sync films
+            </SpriteButton>
+            <SpriteButton href={routes.dashboardNew("merchandise")} variant="secondary">
+              New product
+            </SpriteButton>
+            <SpriteButton href={routes.dashboardNew("services")} variant="secondary">
+              New service
+            </SpriteButton>
+          </div>
+        </DashboardCard>
+
+        <Panel title="Latest blogs" link={{ href: section("blogs"), label: "Open blogs →" }}>
+          {latestPosts.data && latestPosts.data.length > 0 ? (
+            <ul className="mt-5 space-y-3">
+              {latestPosts.data.map((post) => (
+                <Row key={post.id} title={post.title} detail={`${post.slug} · ${post.status}`} />
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-5 text-sm text-muted">No posts yet.</p>
+          )}
         </Panel>
-      </div>
-    </>
+
+        <Panel title="Latest messages" link={{ href: routes.dashboardMessages(), label: "Open inbox →" }}>
+          {latestMessages.data && latestMessages.data.length > 0 ? (
+            <ul className="mt-5 space-y-3">
+              {latestMessages.data.map((message) => (
+                <Row
+                  key={message.id}
+                  title={message.name}
+                  detail={
+                    <>
+                      {messageSubject(message)} · <time dateTime={message.created_at}>{formatDateTime(message.created_at)}</time>
+                    </>
+                  }
+                  badge={<StatusBadge status={message.status} />}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-5 text-sm text-muted">No messages yet. Enquiries from the contact page and orders arrive here.</p>
+          )}
+        </Panel>
+      </section>
+    </div>
   );
 }

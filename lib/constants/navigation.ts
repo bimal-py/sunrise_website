@@ -5,12 +5,12 @@ import { routes } from "@/lib/routes";
  * the item goes on the home page: a section anchor ("/#films"), scrolled to
  * smoothly, with the nav highlighting the section in view. `route` is where it
  * goes from any other page: the section's own page. Items without a home
- * section (Blog) use the same URL for both.
+ * section (Blog, Merchandise) use the same URL for both.
  *
  * The floating desktop pill, the mobile dock (+ its "More" menu) and the footer
  * all start from this list. `icon` is a lucide name, resolved in
  * shared/components/navigation/floating-nav.tsx. Order = the order of the
- * home page's sections.
+ * home page's sections; the pages without one (Blog, Merchandise) sit before Contact.
  */
 export const navItems = [
   { id: "home",     label: "Home",     icon: "House",        href: "/#home",     route: routes.home() },
@@ -19,6 +19,7 @@ export const navItems = [
   { id: "prints",   label: "Prints",   icon: "BookImage",    href: "/#prints",   route: routes.prints() },
   { id: "about",    label: "About",    icon: "Sunrise",      href: "/#about",    route: routes.about() },
   { id: "blog",     label: "Blog",     icon: "BookOpen",     href: routes.blog(), route: routes.blog() },
+  { id: "merchandise", label: "Merchandise", icon: "ShoppingBag", href: routes.merchandise(), route: routes.merchandise() },
   { id: "contact",  label: "Contact",  icon: "Phone",        href: "/#contact",  route: routes.contact() },
 ] as const;
 
@@ -28,7 +29,7 @@ export type NavItem = (typeof navItems)[number];
 export const homeSectionIds = navItems.filter((item) => item.href.startsWith("/#")).map((item) => item.id);
 
 /**
- * Items in the compact mobile dock. The rest (About, Blog) move into the
- * dock's "More" menu so the dock fits a 360px screen.
+ * Items in the compact mobile dock. The rest (About, Blog, Merchandise) move
+ * into the dock's "More" menu so the dock fits a 360px screen.
  */
 export const mobileDockIds: readonly NavItem["id"][] = ["home", "films", "services", "prints", "contact"];

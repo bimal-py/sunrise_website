@@ -3,11 +3,12 @@
 import { useActionState, useContext, useEffect, useRef } from "react";
 import { FormPendingContext, keepValuesOnSubmit } from "@/shared/hooks/use-keep-values-submit";
 import { useFormStatus } from "react-dom";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Loader2 } from "lucide-react";
 import { whatsappUrl } from "@/lib/config/site";
 import { occasions } from "@/features/messages/domain/entities";
 import { submitEnquiry, type EnquiryState } from "@/features/messages/presentation/actions/enquiry";
 import { WhatsAppIcon } from "@/shared/components/brand/social-icons";
+import { doneProgress, startProgress } from "@/shared/components/navigation/progress-store";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 
 const field = "h-11 w-full rounded-control border border-line-strong bg-raised px-3 text-[15px] text-strong placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error";
@@ -17,9 +18,21 @@ const initial: EnquiryState = { status: "idle" };
 function SendButton() {
   const ownPending = useContext(FormPendingContext);
   const pending = useFormStatus().pending || ownPending;
+  // The gold bar at the top of the window while the enquiry is on its way.
+  useEffect(() => {
+    if (!pending) return;
+    startProgress();
+    return doneProgress;
+  }, [pending]);
   return (
     <SpriteButton type="submit" disabled={pending}>
-      {pending ? "Sending…" : "Send enquiry"}
+      {pending ? (
+        <>
+          <Loader2 size={15} className="animate-spin" aria-hidden /> Sending…
+        </>
+      ) : (
+        "Send enquiry"
+      )}
     </SpriteButton>
   );
 }

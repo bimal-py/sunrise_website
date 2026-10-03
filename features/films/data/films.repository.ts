@@ -9,9 +9,11 @@ import type { Film } from "@/features/films/domain/entities";
 import type { FilmRepository } from "@/features/films/domain/repositories";
 import { staticFilms } from "./films.static";
 
-const COLUMNS = "youtube_id, slug, title, youtube_title, category, place, published_at, featured, thumbnail, seo_title, seo_description, updated_at";
+const COLUMNS = "youtube_id, slug, title, youtube_title, category, place, published_at, featured, thumbnail, seo_title, seo_description, duration_seconds, updated_at";
 
-export function rowToFilm(row: Pick<FilmRow, "youtube_id" | "slug" | "title" | "youtube_title" | "category" | "place" | "published_at" | "featured" | "thumbnail" | "seo_title" | "seo_description" | "updated_at">): Film {
+type FilmColumns = "youtube_id" | "slug" | "title" | "youtube_title" | "category" | "place" | "published_at" | "featured" | "thumbnail" | "seo_title" | "seo_description" | "updated_at";
+
+export function rowToFilm(row: Pick<FilmRow, FilmColumns> & Partial<Pick<FilmRow, "duration_seconds">>): Film {
   return {
     id: row.youtube_id,
     slug: row.slug,
@@ -28,6 +30,7 @@ export function rowToFilm(row: Pick<FilmRow, "youtube_id" | "slug" | "title" | "
     seoTitle: row.seo_title,
     seoDescription: row.seo_description,
     updatedAt: row.updated_at,
+    durationSeconds: row.duration_seconds ?? null,
   };
 }
 

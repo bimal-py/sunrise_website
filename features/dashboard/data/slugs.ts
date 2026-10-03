@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { slugify } from "@/lib/utils/slug";
 
-type SlugTable = "films" | "services" | "prints" | "posts";
+type SlugTable = "films" | "services" | "prints" | "posts" | "products" | "product_categories";
 type Db = SupabaseClient<Database>;
 
 export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;

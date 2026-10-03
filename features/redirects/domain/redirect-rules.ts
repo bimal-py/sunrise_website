@@ -10,7 +10,7 @@ import { routes } from "@/lib/routes";
  * (redirectOrNotFound), so these work the moment they're saved and a live page always wins.
  * Every other old address is served by next.config.ts and starts working after a deploy.
  */
-export const DETAIL_PATH = /^\/(films|services|prints|blogs)\/([^/]+)$/;
+export const DETAIL_PATH = /^\/(films|services|prints|blogs|merchandise)\/([^/]+)$/;
 
 /** Never redirected: the dashboard, the API and Next's own files (Next matches case-insensitively). */
 export const PROTECTED_PATH = /^\/(dashboard|api|_next)(\/|$)/i;
@@ -23,6 +23,7 @@ const SITE_PATHS = new Set(
     routes.prints(),
     routes.films(),
     routes.blog(),
+    routes.merchandise(),
     routes.about(),
     routes.contact(),
     routes.privacy(),

@@ -1,6 +1,4 @@
 import "server-only";
-import type { ImageAsset } from "@/shared/domain/image";
-import { supabaseUrl } from "@/lib/supabase/env";
 
 /** Reading dashboard form fields: trimmed, length-capped, with simple types. */
 export function str(formData: FormData, key: string, max = 500): string {
@@ -56,20 +54,5 @@ export function url(formData: FormData, key: string): { value: string; error?: s
     return { value };
   } catch {
     return { value, error: "That doesn't look like a full link (https://…)." };
-  }
-}
-
-/** An ImageField's JSON, accepted only if it points at our own files. */
-export function image(formData: FormData, key: string): ImageAsset | null {
-  const text = String(formData.get(key) ?? "");
-  if (!text) return null;
-  try {
-    const value = JSON.parse(text) as ImageAsset;
-    const ours = (src: string) => src.startsWith("/images/") || (Boolean(supabaseUrl) && src.startsWith(`${supabaseUrl}/storage/v1/object/public/media/`));
-    if (typeof value.src !== "string" || !ours(value.src) || !ours(value.ogImage)) return null;
-    if (!Number.isFinite(value.width) || !Number.isFinite(value.height)) return null;
-    return { src: value.src, width: Math.round(value.width), height: Math.round(value.height), blurDataURL: String(value.blurDataURL ?? "").slice(0, 4000), ogImage: value.ogImage };
-  } catch {
-    return null;
   }
 }

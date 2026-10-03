@@ -32,7 +32,7 @@ export const mdxComponents = {
       <img src={srcSet ? src.replace(/\.webp$/, "-1280.webp") : src} srcSet={srcSet ?? undefined} sizes="(min-width: 1024px) 760px, 100vw" alt={alt} loading="lazy" decoding="async" className="h-auto w-full rounded-card" />
     );
   },
-  // Post bodies come from the dashboard: elements that could run code or load other pages render nothing.
+  // A second wall: lib/mdx/remark-safe-jsx.ts already removes these (overrides only reach Markdown's own elements).
   script: () => null,
   style: () => null,
   iframe: () => null,

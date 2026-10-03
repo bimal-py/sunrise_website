@@ -25,6 +25,14 @@ export async function PrivacyPageView() {
             us and we&apos;ll delete your message. If you message us on WhatsApp instead, that conversation is under
             WhatsApp&apos;s own privacy policy.
           </p>
+          <h2>Orders</h2>
+          <p>
+            When you order something from the <Link href={routes.merchandise()}>merchandise</Link> pages, we keep your name, phone
+            number, delivery address (or where you&apos;d like to collect it), your email and note if you give them, what you
+            ordered (product, options, quantity and price) and when, so we can confirm the order with you and deliver it. No
+            payment details are asked for. Orders are kept like enquiries: in our database (Supabase), readable only by the
+            studio, with the same scrambled code to stop misuse. Ask us and we&apos;ll delete your order details.
+          </p>
           {site.clarityId && (
             <>
               <h2>Visitor statistics</h2>

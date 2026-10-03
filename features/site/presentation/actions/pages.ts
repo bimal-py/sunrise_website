@@ -1,12 +1,14 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { TAG } from "@/lib/cache/tags";
+import { routes } from "@/lib/routes";
 import { notifyIndexNow } from "@/lib/seo/indexnow";
 import type { PageRow } from "@/lib/supabase/types";
 import { requireAdminAction } from "@/features/dashboard/data/auth";
-import { image } from "@/features/dashboard/data/form";
-import type { ActionState } from "@/features/dashboard/presentation/components/form-controls";
+import { imageFromForm } from "@/features/dashboard/data/image-input";
+import type { ActionState } from "@/features/dashboard/presentation/components/ui/action-state";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
 import {
   cleanField,
@@ -19,16 +21,20 @@ import {
   tidyLines,
 } from "@/features/site/domain/page-content";
 
-const oneLine = (value: FormDataEntryValue | null) => String(value ?? "").replace(/\s+/g, " ").trim();
+const oneLine = (value: FormDataEntryValue | null) =>
+  String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /**
- * Saves a fixed page's words and search settings (dashboard → Pages → a page). A field left
- * as its default is stored as "" ("use the default"), so it keeps following the code.
+ * Saves a fixed page's words and search settings (dashboard → Pages → a page), then goes
+ * back to the list. A field left as its default is stored as "" ("use the default"), so it
+ * keeps following the code.
  */
 export async function savePage(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdminAction();
   const key = String(formData.get("key") ?? "");
-  if (!isPageKey(key)) return { status: "error", message: "Unknown page." };
+  if (!isPageKey(key)) return { status: "error", message: "Unknown page. Reload the page and try again." };
   const page = getPageDefinition(key);
   // Defaults built from the studio's name compare against the name the site shows.
   const site = await getSiteSettings();
@@ -58,19 +64,21 @@ export async function savePage(_prev: ActionState, formData: FormData): Promise<
   if (page.seo) {
     patch.seo_title = oneLine(formData.get("seo_title"));
     patch.seo_description = oneLine(formData.get("seo_description"));
-    patch.og_image = image(formData, "og_image");
-    checkLength("Search title", patch.seo_title, SEO_TITLE_MAX);
-    checkLength("Search description", patch.seo_description, SEO_DESCRIPTION_MAX);
+    // The share photo is looked up in the library by its address: sizes and blur never come from the browser.
+    patch.og_image = await imageFromForm(supabase, formData, "og_image");
+    if (!patch.og_image && String(formData.get("og_image") ?? "")) problems.push("The share image isn't in the photo library any more. Choose it again.");
+    checkLength("SEO title", patch.seo_title, SEO_TITLE_MAX);
+    checkLength("SEO description", patch.seo_description, SEO_DESCRIPTION_MAX);
   }
 
   if (problems.length > 0) return { status: "error", message: problems.join(" ") };
 
-  // Upsert: the eight rows come from the content seed, but a missing one is simply created.
+  // Upsert: the rows come from the content seed, but a missing one is simply created.
   const { error } = await supabase.from("pages").upsert({ key, ...patch }, { onConflict: "key" });
-  if (error) return { status: "error", message: `Couldn't save: ${error.message}` };
+  if (error) return { status: "error", message: `Couldn't save the page: ${error.message}` };
 
   // One cache entry holds all the pages' words: every page refreshes on its next visit.
   updateTag(TAG.pages);
   notifyIndexNow([page.path]);
-  return { status: "success", message: "Saved. The page shows it on the next visit." };
+  redirect(`${routes.dashboardSection("pages")}?saved=${encodeURIComponent(page.label)}`);
 }

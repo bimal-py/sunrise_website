@@ -19,6 +19,14 @@ import { Container } from "@/shared/components/ui/container";
 import { FilmCard } from "../components/film-card";
 import { YouTubePlayer } from "../components/youtube-player";
 
+/** 7113 → "PT1H58M33S" (schema.org durations are ISO 8601). */
+function isoDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `PT${h ? `${h}H` : ""}${m ? `${m}M` : ""}${s || (!h && !m) ? `${s}S` : ""}`;
+}
+
 function videoJsonLd(film: Film, site: SiteSettings) {
   return {
     "@context": "https://schema.org",
@@ -26,6 +34,7 @@ function videoJsonLd(film: Film, site: SiteSettings) {
     name: film.title,
     description: filmDescription(film, site.name),
     uploadDate: film.publishedAt,
+    ...(film.durationSeconds ? { duration: isoDuration(film.durationSeconds) } : {}),
     ...(film.thumbnail ? { thumbnailUrl: [absoluteUrl(film.thumbnail.ogImage)] } : {}),
     embedUrl: film.embedUrl,
     url: absoluteUrl(routes.film(film.slug)),

@@ -17,6 +17,7 @@ export function rowToService(row: ServiceRow, printSlugs: Map<string, string>): 
     nameNe: row.name_ne,
     shortName: row.short_name || row.name,
     icon: row.icon as OfferingIcon,
+    iconSvg: row.icon_svg ?? null,
     summary: row.summary,
     intro: row.intro,
     sections: row.sections,

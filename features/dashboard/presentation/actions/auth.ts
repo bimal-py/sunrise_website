@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { routes } from "@/lib/routes";
+import { requireAdminAction } from "@/features/dashboard/data/auth";
+import type { ActionState } from "../components/ui/action-state";
 
 export type SignInState = { error?: string; email?: string };
 
@@ -37,16 +39,33 @@ export async function signOut() {
   redirect(routes.dashboardLogin());
 }
 
-/** Settings → Account: change the signed-in admin's password. */
-export async function changePassword(_prev: { status: "idle" | "success" | "error"; message?: string }, formData: FormData) {
-  const supabase = await createServerSupabase();
-  const { data: isAdmin } = await supabase.rpc("is_admin");
-  if (isAdmin !== true) return { status: "error" as const, message: "Sign in again first." };
+/**
+ * Settings → Account: change the signed-in admin's password. The current password is checked
+ * first (a dashboard left open can't be used to lock the owner out), and other devices signed
+ * in to the dashboard are signed out afterwards. Back to the page with ?changed= when done.
+ */
+export async function changePassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, user } = await requireAdminAction();
+  const current = String(formData.get("current") ?? "");
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
-  if (password.length < 10) return { status: "error" as const, message: "Use at least 10 characters." };
-  if (password !== confirm) return { status: "error" as const, message: "The two passwords don't match." };
+  if (!current) return { status: "error", message: "Enter your current password." };
+  if (password.length < 10) return { status: "error", message: "Use at least 10 characters for the new password." };
+  if (password.length > 72) return { status: "error", message: "Use at most 72 characters for the new password." };
+  if (password !== confirm) return { status: "error", message: "The two new passwords don't match." };
+  if (password === current) return { status: "error", message: "The new password is the same as the current one." };
+  if (!user.email) return { status: "error", message: "This account has no email address to check the password against." };
+
+  const { error: checkError } = await supabase.auth.signInWithPassword({ email: user.email, password: current });
+  if (checkError) {
+    if (checkError.code === "invalid_credentials") return { status: "error", message: "Your current password isn't right." };
+    if (checkError.status === 429) return { status: "error", message: "Too many tries. Wait a few minutes, then try again." };
+    return { status: "error", message: `Couldn't check your current password: ${checkError.message}` };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { status: "error" as const, message: error.message };
-  return { status: "success" as const, message: "Password changed. Use it next time you sign in." };
+  if (error) return { status: "error", message: `Couldn't change the password: ${error.message}` };
+  // Anyone else signed in with the old password loses their session (best effort).
+  await supabase.auth.signOut({ scope: "others" }).catch(() => undefined);
+  redirect(`${routes.dashboardSection("settings/account")}?changed=${Date.now().toString(36)}`);
 }

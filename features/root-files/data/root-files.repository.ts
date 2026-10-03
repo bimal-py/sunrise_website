@@ -1,9 +1,10 @@
 import "server-only";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { readClient } from "@/lib/supabase/read-client";
-import { DEFAULT_ROOT_FILE_TYPE, isRootFileType, ROOT_FILE_NAME } from "@/features/root-files/domain/root-file";
+import { DEFAULT_ROOT_FILE_TYPE, isRootFileType, isStoragePath, ROOT_FILE_NAME } from "@/features/root-files/domain/root-file";
 
-export type ServedFile = { contentType: string; body: string };
+/** A published root file: its text, or the uploaded file (in the files bucket) served in its place. */
+export type ServedFile = { contentType: string; body: string; storagePath: string | null };
 
 export type RootFileLookup = { status: "found"; file: ServedFile } | { status: "missing" } | { status: "unavailable" };
 
@@ -28,14 +29,21 @@ let retryAt = 0;
 async function load(): Promise<Snapshot> {
   const db = readClient();
   const [files, settings] = await Promise.all([
-    db.from("root_files").select("file_name, content_type, body").eq("published", true),
+    db.from("root_files").select("file_name, content_type, body, storage_path").eq("published", true),
     db.from("site_settings").select("indexnow_key").eq("id", 1).maybeSingle(),
   ]);
   if (files.error) throw new Error(`root_files: ${files.error.message}`);
   if (settings.error) throw new Error(`site_settings: ${settings.error.message}`);
   return {
     files: new Map(
-      files.data.map((row) => [row.file_name, { contentType: isRootFileType(row.content_type) ? row.content_type : DEFAULT_ROOT_FILE_TYPE, body: row.body }]),
+      files.data.map((row) => [
+        row.file_name,
+        {
+          contentType: isRootFileType(row.content_type) ? row.content_type : DEFAULT_ROOT_FILE_TYPE,
+          body: row.body,
+          storagePath: row.storage_path && isStoragePath(row.storage_path) ? row.storage_path : null,
+        },
+      ]),
     ),
     indexNowKey: settings.data?.indexnow_key ?? "",
     loadedAt: Date.now(),
@@ -65,7 +73,7 @@ function filesNoOlderThan(maxAge: number): Snapshot | null | Promise<Snapshot | 
 
 function lookup(data: Snapshot, name: string): ServedFile | undefined {
   // The IndexNow key file: proves to Bing that the key lib/seo/indexnow.ts sends is ours.
-  if (data.indexNowKey && name === `${data.indexNowKey}.txt`) return { contentType: "text/plain; charset=utf-8", body: data.indexNowKey };
+  if (data.indexNowKey && name === `${data.indexNowKey}.txt`) return { contentType: "text/plain; charset=utf-8", body: data.indexNowKey, storagePath: null };
   return data.files.get(name);
 }
 

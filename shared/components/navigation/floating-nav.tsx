@@ -11,6 +11,7 @@ import {
   Ellipsis,
   House,
   Phone,
+  ShoppingBag,
   Sunrise,
   type LucideIcon,
 } from "lucide-react";
@@ -19,7 +20,7 @@ import { WhatsAppIcon } from "@/shared/components/brand/social-icons";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 import { useActiveSection } from "@/shared/hooks/use-active-section";
 
-const ICONS: Record<NavItem["icon"], LucideIcon> = { House, Camera, BookImage, Clapperboard, BookOpen, Sunrise, Phone };
+const ICONS: Record<NavItem["icon"], LucideIcon> = { House, Camera, BookImage, Clapperboard, BookOpen, Sunrise, ShoppingBag, Phone };
 
 const DOCK = navItems.filter((item) => mobileDockIds.includes(item.id));
 const MORE = navItems.filter((item) => !mobileDockIds.includes(item.id));
@@ -105,7 +106,7 @@ export function FloatingNav({ contact }: { contact: NavContact }) {
                 href={hrefOf(item)}
                 onClick={(event) => onNavClick(event, item)}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-10 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 xl:px-4 ${
+                className={`flex h-10 items-center gap-2 rounded-full border px-3 text-sm font-medium transition-colors duration-150 xl:px-4 ${
                   active ? "border-line-strong bg-nav-active text-strong" : "border-transparent text-foreground/80 hover:text-primary"
                 }`}
               >
@@ -196,7 +197,7 @@ export function FloatingNav({ contact }: { contact: NavContact }) {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            aria-label={menuOpen ? "Close more menu" : "More: about, blog, call"}
+            aria-label={menuOpen ? "Close more menu" : "More: about, blog, merchandise, call"}
             aria-expanded={menuOpen}
             aria-controls="more-menu"
             className={`flex size-11 items-center justify-center rounded-full transition-colors duration-150 ${

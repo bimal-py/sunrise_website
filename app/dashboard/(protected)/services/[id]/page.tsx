@@ -1,56 +1,45 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
 import { routes } from "@/lib/routes";
 import { requireAdmin } from "@/features/dashboard/data/auth";
 import { pickableFilms } from "@/features/dashboard/data/pickers";
-import { ConfirmSubmit } from "@/features/dashboard/presentation/components/form-controls";
-import { PageHeader, Panel, rowLinkClass } from "@/features/dashboard/presentation/components/ui";
-import { deleteService } from "@/features/services/presentation/actions/services";
+import { DashboardButton } from "@/features/dashboard/presentation/components/ui/dashboard-button";
+import { DashboardPageHeader } from "@/features/dashboard/presentation/components/ui/dashboard-page-header";
 import { ServiceForm } from "@/features/services/presentation/components/service-form";
 
 export const metadata: Metadata = { title: "Edit service" };
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export default async function EditServiceFormPage({ params }: PageProps) {
+export default async function EditServicePage({ params }: PageProps) {
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) notFound();
   const { supabase } = await requireAdmin();
   const [{ data: row }, films, { data: prints }] = await Promise.all([
     supabase.from("services").select("*").eq("id", id).maybeSingle(),
     pickableFilms(supabase),
-    supabase.from("prints").select("id, name").order("sort_order"),
+    supabase.from("prints").select("id, name").order("sort_order").order("created_at"),
   ]);
   if (!row) notFound();
 
   return (
-    <>
-      <PageHeader
+    <div className="grid gap-8">
+      <DashboardPageHeader
         eyebrow="Services"
-        title={row.name}
+        title={`Edit: ${row.name}`}
+        description="Update the page's words, icon, still and search details. Saving refreshes the site straight away."
         actions={
-          <div className="flex flex-wrap items-center gap-4">
-            <a href={routes.dashboardSection("services")} className={rowLinkClass}>
-              ← All services
-            </a>
-            {row.published && (
-              <a href={routes.service(row.slug)} target="_blank" rel="noopener noreferrer" className={rowLinkClass}>
-                View on the site <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-              </a>
-            )}
-          </div>
+          <>
+            <DashboardButton href={routes.dashboardSection("services")}>Back to services</DashboardButton>
+            {row.published ? (
+              <DashboardButton href={routes.service(row.slug)} newTab>
+                Preview
+              </DashboardButton>
+            ) : null}
+          </>
         }
       />
-      <Panel>
-        <ServiceForm service={row} films={films} prints={prints ?? []} />
-      </Panel>
-      <Panel title="Delete this service" description="Unpublishing hides it and is reversible. Deleting removes it; its address then sends visitors to the services page." className="mt-6">
-        <form action={deleteService}>
-          <input type="hidden" name="id" value={row.id} />
-          <ConfirmSubmit confirm={`Delete “${row.name}”? This can't be undone.`}>Delete service</ConfirmSubmit>
-        </form>
-      </Panel>
-    </>
+      <ServiceForm service={row} films={films} prints={prints ?? []} />
+    </div>
   );
 }

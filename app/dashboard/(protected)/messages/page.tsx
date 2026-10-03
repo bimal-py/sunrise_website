@@ -1,188 +1,143 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
-import { whatsappUrl } from "@/lib/config/site";
 import { routes } from "@/lib/routes";
 import type { MessageStatus } from "@/lib/supabase/types";
-import { formatDateTime } from "@/lib/utils/date";
-import { toWhatsappNumber } from "@/lib/utils/phone";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
 import { requireAdmin } from "@/features/dashboard/data/auth";
-import { ConfirmSubmit, QuietSubmit } from "@/features/dashboard/presentation/components/form-controls";
-import { PageHeader, StatusBadge } from "@/features/dashboard/presentation/components/ui";
-import { deleteMessage, markAllRead, setMessageStatus } from "@/features/messages/presentation/actions/manage";
-import { WhatsAppIcon } from "@/shared/components/brand/social-icons";
-import { EmptyState } from "@/shared/components/ui/empty-state";
+import { DashboardButton } from "@/features/dashboard/presentation/components/ui/dashboard-button";
+import { DashboardPageHeader } from "@/features/dashboard/presentation/components/ui/dashboard-page-header";
+import { DashboardEmptyState } from "@/features/dashboard/presentation/components/ui/dashboard-ui";
+import { DashboardFilterBar } from "@/features/dashboard/presentation/components/ui/filter-bar";
+import { Pager } from "@/features/dashboard/presentation/components/ui/pager";
+import { markAllRead } from "@/features/messages/presentation/actions/manage";
+import { MessageCard } from "@/features/messages/presentation/components/message-card";
 
 export const metadata: Metadata = { title: "Messages" };
 
-const VIEWS = [
-  { id: "inbox", label: "Inbox" },
-  { id: "new", label: "New" },
-  { id: "replied", label: "Replied" },
-  { id: "archived", label: "Archived" },
-] as const;
-type View = (typeof VIEWS)[number]["id"];
-
-const badge: Record<MessageStatus, { tone: "gold" | "green" | "muted"; label: string }> = {
-  new: { tone: "gold", label: "New" },
-  read: { tone: "muted", label: "Read" },
-  replied: { tone: "green", label: "Replied" },
-  archived: { tone: "muted", label: "Archived" },
-};
-
 const PAGE_SIZE = 25;
 
-const chip = "inline-flex h-9 items-center rounded-control border px-3 text-sm transition-colors duration-150";
+/** Status filter: the inbox (everything not archived) unless a status is chosen. "" = the default, left out of the address. */
+const STATUS_OPTIONS = [
+  { value: "", label: "Inbox (not archived)" },
+  { value: "all", label: "All" },
+  { value: "new", label: "New" },
+  { value: "read", label: "Read" },
+  { value: "replied", label: "Replied" },
+  { value: "archived", label: "Archived" },
+];
+const TYPE_OPTIONS = [
+  { value: "", label: "Enquiries and orders" },
+  { value: "enquiry", label: "Enquiries" },
+  { value: "order", label: "Orders" },
+];
+const SORT_OPTIONS = [
+  { value: "", label: "Received date" },
+  { value: "updated", label: "Updated date" },
+];
+const ORDER_OPTIONS = [
+  { value: "", label: "Newest first" },
+  { value: "asc", label: "Oldest first" },
+];
 
-type PageProps = { searchParams: Promise<{ status?: string; page?: string }> };
+type Params = { status?: string | string[]; type?: string | string[]; sort?: string | string[]; order?: string | string[]; q?: string | string[]; page?: string | string[] };
 
-export default async function MessagesPage({ searchParams }: PageProps) {
-  const { status, page: pageParam } = await searchParams;
-  const view: View = VIEWS.some((v) => v.id === status) ? (status as View) : "inbox";
-  const page = Math.max(1, Number.parseInt(pageParam ?? "", 10) || 1);
+const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? "";
+const pick = (value: string, options: { value: string }[]) => (options.some((option) => option.value === value) ? value : "");
+
+/** Search words, safe inside a PostgREST or() filter (no commas, brackets or wildcards). */
+function searchWords(raw: string): string {
+  return raw.replace(/[%_*,()\\"':]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+export default async function MessagesPage({ searchParams }: { searchParams: Promise<Params> }) {
+  const params = await searchParams;
+  const status = pick(first(params.status), STATUS_OPTIONS);
+  const type = pick(first(params.type), TYPE_OPTIONS);
+  const sort = pick(first(params.sort), SORT_OPTIONS);
+  const order = pick(first(params.order), ORDER_OPTIONS);
+  const q = searchWords(first(params.q));
+  const page = Math.max(1, Number.parseInt(first(params.page), 10) || 1);
   const { supabase } = await requireAdmin();
 
-  let query = supabase
-    .from("messages")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
+  let query = supabase.from("messages").select("*", { count: "exact" });
+  if (!status) query = query.neq("status", "archived");
+  else if (status !== "all") query = query.eq("status", status as MessageStatus);
+  if (type === "enquiry" || type === "order") query = query.eq("kind", type);
+  if (q) {
+    const like = `%${q}%`;
+    query = query.or(
+      ["name", "phone", "email", "message", "occasion", "place", "product_name", "address"].map((column) => `${column}.ilike.${like}`).join(","),
+    );
+  }
+  query = query
+    .order(sort === "updated" ? "updated_at" : "created_at", { ascending: order === "asc" })
+    .order("id")
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-  query = view === "inbox" ? query.neq("status", "archived") : query.eq("status", view);
-  const [{ data: messages, error, count }, site] = await Promise.all([query, getSiteSettings()]);
+
+  const [{ data: messages, error, count }, site, { count: newCount }] = await Promise.all([
+    query,
+    getSiteSettings(),
+    supabase.from("messages").select("id", { count: "exact", head: true }).eq("status", "new"),
+  ]);
   if (error) throw new Error(`Couldn't load messages: ${error.message}`);
   const total = count ?? messages.length;
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const filtered = Boolean(status || type || q);
+
   const pageHref = (to: number) => {
-    const params = new URLSearchParams();
-    if (view !== "inbox") params.set("status", view);
-    if (to > 1) params.set("page", String(to));
-    const query = params.toString();
-    return query ? `${routes.dashboardMessages()}?${query}` : routes.dashboardMessages();
+    const next = new URLSearchParams();
+    if (status) next.set("status", status);
+    if (type) next.set("type", type);
+    if (sort) next.set("sort", sort);
+    if (order) next.set("order", order);
+    if (q) next.set("q", q);
+    if (to > 1) next.set("page", String(to));
+    const text = next.toString();
+    return text ? `${routes.dashboardMessages()}?${text}` : routes.dashboardMessages();
   };
-  const hasNew = messages.some((m) => m.status === "new");
 
   return (
-    <>
-      <PageHeader
+    <div className="grid gap-8">
+      <DashboardPageHeader
         eyebrow="Messages"
-        title="Enquiries"
-        description="Sent from the contact page's form. Reply on WhatsApp or by phone, then mark the message replied."
+        title="Enquiries and orders."
+        description="Enquiries from the contact page and orders from the shop. Filter by status or type, reply on WhatsApp, by phone or email, then set the status."
         actions={
-          hasNew ? (
+          newCount ? (
             <form action={markAllRead}>
-              <QuietSubmit className="text-primary hover:text-primary-strong">Mark all as read</QuietSubmit>
+              <DashboardButton type="submit">Mark all as read</DashboardButton>
             </form>
           ) : undefined
         }
       />
 
-      <nav aria-label="Message folders" className="mb-6 flex flex-wrap gap-2">
-        {VIEWS.map((v) => (
-          <Link
-            key={v.id}
-            href={v.id === "inbox" ? routes.dashboardMessages() : routes.dashboardMessages(v.id)}
-            aria-current={view === v.id ? "page" : undefined}
-            className={`${chip} ${view === v.id ? "border-primary bg-primary-soft text-strong" : "border-line-strong text-foreground hover:border-primary"}`}
-          >
-            {v.label}
-          </Link>
-        ))}
-      </nav>
+      <DashboardFilterBar
+        action={routes.dashboardMessages()}
+        search={{ name: "q", placeholder: "Name, phone, email or words", defaultValue: q }}
+        fields={[
+          { name: "status", label: "Status", options: STATUS_OPTIONS, defaultValue: status },
+          { name: "type", label: "Type", options: TYPE_OPTIONS, defaultValue: type },
+          { name: "sort", label: "Sort by", options: SORT_OPTIONS, defaultValue: sort },
+          { name: "order", label: "Order", options: ORDER_OPTIONS, defaultValue: order },
+        ]}
+      />
 
       {messages.length === 0 ? (
-        <EmptyState title={view === "inbox" ? "No messages yet" : "Nothing here"}>
-          {view === "inbox" ? "When someone sends the form on the contact page, it appears here." : "Messages you move here will show up in this folder."}
-        </EmptyState>
+        <DashboardEmptyState
+          title={filtered ? "No messages match" : "No messages yet"}
+          action={filtered ? <DashboardButton href={routes.dashboardMessages()}>Show the inbox</DashboardButton> : undefined}
+        >
+          {filtered
+            ? "Try another status, type or search."
+            : "Enquiries sent from the contact page and orders from product pages arrive here."}
+        </DashboardEmptyState>
       ) : (
-        <ul className="flex flex-col gap-4">
-          {messages.map((m) => {
-            const wa = toWhatsappNumber(m.phone);
-            const greeting = `Hello ${m.name}, this is ${site.name}. Thank you for your message${m.occasion ? ` about ${m.occasion.toLowerCase()}` : ""}.`;
-            return (
-              <li key={m.id} className={`rounded-panel border bg-surface p-5 sm:p-6 ${m.status === "new" ? "border-primary/50" : "border-line"}`}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-lg font-semibold text-strong">{m.name}</p>
-                    <p className="mt-0.5 text-sm text-muted">
-                      {[m.occasion, m.event_date && `Date: ${m.event_date}`, m.place && `Place: ${m.place}`].filter(Boolean).join(" · ")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge tone={badge[m.status].tone}>{badge[m.status].label}</StatusBadge>
-                    <time dateTime={m.created_at} className="font-mono text-xs text-muted">
-                      {formatDateTime(m.created_at)}
-                    </time>
-                  </div>
-                </div>
-
-                {m.message && <p className="mt-4 whitespace-pre-wrap text-foreground">{m.message}</p>}
-
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-                  {wa && (
-                    <a href={whatsappUrl(wa, greeting)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1.5 text-primary hover:text-primary-strong">
-                      <WhatsAppIcon className="h-4 w-4" /> Reply on WhatsApp
-                    </a>
-                  )}
-                  {m.phone && (
-                    <a href={`tel:${m.phone.replace(/[^\d+]/g, "")}`} className="inline-flex min-h-8 items-center gap-1.5 text-primary hover:text-primary-strong">
-                      <Phone className="h-4 w-4" aria-hidden /> {m.phone}
-                    </a>
-                  )}
-                  {m.email && (
-                    <a href={`mailto:${m.email}?subject=${encodeURIComponent(`Your enquiry to ${site.name}`)}`} className="inline-flex min-h-8 items-center gap-1.5 break-all text-primary hover:text-primary-strong">
-                      <Mail className="h-4 w-4" aria-hidden /> {m.email}
-                    </a>
-                  )}
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-line pt-3">
-                  {(
-                    [
-                      m.status === "new" && { status: "read", label: "Mark read" },
-                      m.status !== "replied" && m.status !== "archived" && { status: "replied", label: "Mark replied" },
-                      m.status !== "archived" && { status: "archived", label: "Archive" },
-                      m.status === "archived" && { status: "read", label: "Back to inbox" },
-                    ].filter(Boolean) as { status: MessageStatus; label: string }[]
-                  ).map((next) => (
-                    <form key={next.status} action={setMessageStatus}>
-                      <input type="hidden" name="id" value={m.id} />
-                      <input type="hidden" name="status" value={next.status} />
-                      <QuietSubmit>{next.label}</QuietSubmit>
-                    </form>
-                  ))}
-                  <form action={deleteMessage} className="ml-auto">
-                    <input type="hidden" name="id" value={m.id} />
-                    <ConfirmSubmit confirm={`Delete the message from ${m.name}? This can't be undone.`}>Delete</ConfirmSubmit>
-                  </form>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <section aria-label="Messages" className="grid gap-6">
+          {messages.map((message) => (
+            <MessageCard key={message.id} message={message} studioName={site.name} />
+          ))}
+        </section>
       )}
 
-      {pages > 1 && (
-        <nav aria-label="Message pages" className="mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
-          {page > 1 ? (
-            <Link href={pageHref(page - 1)} className="inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-strong">
-              ← Newer
-            </Link>
-          ) : (
-            <span />
-          )}
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
-          </p>
-          {page < pages ? (
-            <Link href={pageHref(page + 1)} className="inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-strong">
-              Older →
-            </Link>
-          ) : (
-            <span />
-          )}
-        </nav>
-      )}
-    </>
+      <Pager page={page} total={total} pageSize={PAGE_SIZE} href={pageHref} noun={total === 1 ? "message" : "messages"} />
+    </div>
   );
 }

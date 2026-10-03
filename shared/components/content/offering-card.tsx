@@ -10,7 +10,7 @@ export function OfferingCard({ offering, href, meta }: { offering: Offering; hre
     <article className="af-card group relative flex h-full flex-col rounded-card border border-line bg-surface p-6 transition-colors duration-150 hover:border-line-strong">
       <AfBrackets />
       <span className="flex h-10 w-10 items-center justify-center rounded-full border border-line-strong">
-        <OfferingIcon name={offering.icon} />
+        <OfferingIcon name={offering.icon} svg={offering.iconSvg} />
       </span>
       <h3 className="mt-5 text-lg leading-snug group-hover:text-primary">
         {/* Stretched link: the whole card is clickable, one link in the markup. */}

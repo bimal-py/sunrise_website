@@ -9,8 +9,10 @@ import { ReviewCard } from "@/features/reviews/presentation/components/review-ca
 import { serviceRepository } from "@/features/services/data/services.repository";
 import { getPage } from "@/features/site/data/pages.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { getSocialLinks } from "@/features/site/data/social-links.repository";
 import { pageCopy } from "@/features/site/domain/page-content";
-import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
+import { isOwnWhatsappChat } from "@/features/site/domain/social-link";
+import { SocialLinkIcon, WhatsAppIcon } from "@/shared/components/brand/social-icons";
 import { SunriseMark } from "@/shared/components/brand/sunrise-mark";
 import { JsonLd } from "@/shared/components/seo/json-ld";
 import { Container } from "@/shared/components/ui/container";
@@ -49,7 +51,7 @@ const litSection = "relative isolate";
  * ids match `navItems` (lib/constants/navigation.ts), which scrolls to them.
  */
 export async function HomePageView() {
-  const [reel, allFilms, services, allServices, prints, reviews, site, page] = await Promise.all([
+  const [reel, allFilms, services, allServices, prints, reviews, site, page, socialLinks] = await Promise.all([
     filmRepository.listHighlights(8),
     filmRepository.list(),
     serviceRepository.list({ featured: true }),
@@ -58,6 +60,7 @@ export async function HomePageView() {
     reviewRepository.list(),
     getSiteSettings(),
     getPage("home"),
+    getSocialLinks(),
   ]);
   // The scenes' titles and ledes (dashboard → Pages → Home); the headline is a studio setting.
   const copy = pageCopy("home", page.content, site);
@@ -76,7 +79,7 @@ export async function HomePageView() {
   return (
     <main>
       <JsonLd data={websiteJsonLd(site)} />
-      <JsonLd data={localBusinessJsonLd(site)} />
+      <JsonLd data={localBusinessJsonLd(site, socialLinks)} />
       <SplashScreen heroMarkSelector=".hero-mark" tagline={site.tagline} signature={`${site.name}, ${address.district}`} />
 
       {/* ── Home: the whole first screen. The splash's sun lands on its mark. ── */}
@@ -108,14 +111,15 @@ export async function HomePageView() {
                   Watch our films
                 </SpriteButton>
               </div>
-              {/* Social profiles, as on the owner's portfolio: plain icons, no boxes. */}
-              <ul className="mt-3 flex items-center justify-center gap-3">
+              {/* Social profiles, as on the owner's portfolio: plain icons, no boxes (Settings → Social links), then WhatsApp. */}
+              <ul className="mt-3 flex flex-wrap items-center justify-center gap-3">
                 {[
-                  { label: "Facebook", href: social.facebook, Icon: FacebookIcon },
-                  { label: "YouTube", href: social.youtube, Icon: YouTubeIcon },
-                  { label: "WhatsApp", href: contact.whatsapp ? whatsappUrl(contact.whatsapp) : "", Icon: WhatsAppIcon },
-                ].filter((link) => link.href).map(({ label, href, Icon }) => (
-                  <li key={label}>
+                  ...socialLinks
+                    .filter((link) => !isOwnWhatsappChat(link, contact.whatsapp))
+                    .map((link) => ({ key: link.id, label: link.label, href: link.url, icon: <SocialLinkIcon platform={link.platform} iconSvg={link.iconSvg} /> })),
+                  ...(contact.whatsapp ? [{ key: "whatsapp", label: "WhatsApp", href: whatsappUrl(contact.whatsapp), icon: <WhatsAppIcon className="h-5 w-5" /> }] : []),
+                ].map(({ key, label, href, icon }) => (
+                  <li key={key}>
                     <a
                       href={href}
                       target="_blank"
@@ -123,7 +127,7 @@ export async function HomePageView() {
                       aria-label={label}
                       className="flex size-11 items-center justify-center text-muted transition-colors duration-150 hover:text-primary"
                     >
-                      <Icon className="h-5 w-5" />
+                      {icon}
                     </a>
                   </li>
                 ))}
@@ -232,7 +236,7 @@ export async function HomePageView() {
       <section id="contact" aria-labelledby="contact-heading" className={section}>
         <Container>
           <SceneHeading scene={sceneOf("contact")} id="contact-heading" title={copy.contactTitle} lede={copy.contactLede} />
-          <Slate scene={sceneOf("contact")} site={site} />
+          <Slate scene={sceneOf("contact")} site={site} socialLinks={socialLinks} />
         </Container>
       </section>
     </main>

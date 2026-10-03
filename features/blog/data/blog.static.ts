@@ -2,10 +2,8 @@ import "server-only";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { cache } from "react";
-import { compileMDX } from "next-mdx-remote/rsc";
-import rehypeSlug from "rehype-slug";
-import remarkGfm from "remark-gfm";
 import { defaultSiteSettings } from "@/lib/config/site";
+import { compileSafeMdx } from "@/lib/mdx/compile";
 import type { BlogCoverImage, BlogPost, BlogPostPreview } from "@/features/blog/domain/entities";
 import { mdxComponents } from "@/features/blog/presentation/components/mdx-components";
 import { extractHeadings, readingTime } from "./blog.utils";
@@ -38,14 +36,7 @@ async function compile(slug: string) {
   const source = await readFile(path.join(POSTS_DIR, `${slug}.mdx`), "utf8").catch(() => null);
   if (source === null) return null;
 
-  const { frontmatter, content } = await compileMDX<BlogFrontmatter>({
-    source,
-    components: mdxComponents,
-    options: {
-      parseFrontmatter: true,
-      mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins: [rehypeSlug] },
-    },
-  });
+  const { frontmatter, content } = await compileSafeMdx<BlogFrontmatter>(source, { components: mdxComponents, slugs: true, frontmatter: true });
   if (frontmatter.draft) return null;
 
   const preview: BlogPostPreview = {

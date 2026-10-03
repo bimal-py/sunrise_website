@@ -34,6 +34,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { OfferingIcon as IconName } from "@/shared/domain/offering";
+import { MaskIcon } from "@/shared/components/ui/mask-icon";
 
 export const OFFERING_ICON_COMPONENTS: Record<IconName, LucideIcon> = {
   Heart,
@@ -70,8 +71,13 @@ export const OFFERING_ICON_COMPONENTS: Record<IconName, LucideIcon> = {
   Smile,
 };
 
-/** An offering's small gold icon (outline, never decorative-large). Unknown names fall back to a camera. */
-export function OfferingIcon({ name, className = "h-5 w-5" }: { name: IconName; className?: string }) {
+/**
+ * An offering's small gold icon (outline, never decorative-large): the icon chosen in the
+ * dashboard (`svg`, cleaned markup drawn as a mask in the text colour) when there is one,
+ * else the built-in lucide icon `name` (unknown names fall back to a camera).
+ */
+export function OfferingIcon({ name, svg, className = "h-5 w-5" }: { name: IconName; svg?: string | null; className?: string }) {
+  if (svg) return <MaskIcon svg={svg} className={`${className} text-primary`} />;
   const Icon = OFFERING_ICON_COMPONENTS[name] ?? Camera;
   return <Icon className={`${className} text-primary`} strokeWidth={1.7} aria-hidden />;
 }

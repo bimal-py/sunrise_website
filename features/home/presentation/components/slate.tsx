@@ -1,7 +1,8 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import type { SiteSettings } from "@/features/site/domain/entities";
+import { isOwnWhatsappChat, type SocialLink } from "@/features/site/domain/social-link";
 import { whatsappUrl } from "@/lib/config/site";
-import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
+import { SocialLinkIcon, WhatsAppIcon } from "@/shared/components/brand/social-icons";
 import { SpriteButton } from "@/shared/components/ui/sprite-button";
 import { Clapper } from "./clapper";
 
@@ -15,8 +16,10 @@ const social =
  * day is the production and the studio is behind the camera. The top stick
  * claps once as it scrolls into view. Then the ways to book.
  */
-export function Slate({ scene, site }: { scene: number; site: SiteSettings }) {
-  const { contact, address, social: socials } = site;
+export function Slate({ scene, site, socialLinks }: { scene: number; site: SiteSettings; socialLinks: SocialLink[] }) {
+  const { contact, address } = site;
+  // The studio's profiles (Settings → Social links); WhatsApp already has its button above.
+  const profiles = socialLinks.filter((link) => !isOwnWhatsappChat(link, contact.whatsapp));
   const message = `Hello ${site.name}, I'd like to book a date. The occasion is: `;
   return (
     <div className="mx-auto max-w-3xl pt-6">
@@ -73,18 +76,17 @@ export function Slate({ scene, site }: { scene: number; site: SiteSettings }) {
                 </a>
               </li>
             </ul>
-            <div className="flex gap-2">
-              {socials.facebook && (
-                <a href={socials.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={social}>
-                  <FacebookIcon className="h-4 w-4" />
-                </a>
-              )}
-              {socials.youtube && (
-                <a href={socials.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={social}>
-                  <YouTubeIcon className="h-4 w-4" />
-                </a>
-              )}
-            </div>
+            {profiles.length > 0 && (
+              <ul className="flex flex-wrap gap-2">
+                {profiles.map((link) => (
+                  <li key={link.id}>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.label} className={social}>
+                      <SocialLinkIcon platform={link.platform} iconSvg={link.iconSvg} className="h-4 w-4" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

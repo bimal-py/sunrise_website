@@ -14,6 +14,13 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "warn",
     },
   },
+  {
+    // Text from the dashboard is compiled only through lib/mdx/compile.ts, which removes unsafe JSX.
+    ignores: ["lib/mdx/**"],
+    rules: {
+      "no-restricted-imports": ["error", { paths: [{ name: "next-mdx-remote/rsc", message: "Use compileSafeMdx from @/lib/mdx/compile." }] }],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

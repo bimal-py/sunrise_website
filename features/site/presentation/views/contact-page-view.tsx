@@ -3,32 +3,44 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { whatsappUrl } from "@/lib/config/site";
 import { getPage } from "@/features/site/data/pages.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { getSocialLinks } from "@/features/site/data/social-links.repository";
 import { lineItems, pageCopy } from "@/features/site/domain/page-content";
+import { displayUrl, isOwnWhatsappChat, isSocialPlatform, platformLabel, type SocialLink } from "@/features/site/domain/social-link";
 import { localBusinessJsonLd } from "@/lib/seo/structured-data";
-import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
+import { SocialLinkIcon, WhatsAppIcon } from "@/shared/components/brand/social-icons";
 import { JsonLd } from "@/shared/components/seo/json-ld";
 import { Container } from "@/shared/components/ui/container";
 import { SectionHeading } from "@/shared/components/ui/section-heading";
 import { BookingForm } from "../components/booking-form";
 
-type Channel = { icon: ReactNode; label: string; value: string; href: string; external?: boolean };
+type Channel = { key: string; icon: ReactNode; label: string; value: string; href: string; external?: boolean };
+
+/** A social link as a channel row: the platform above (or the link's own name, for Website/Other), the link's name or address below. */
+function socialChannel(link: SocialLink): Channel {
+  const known = isSocialPlatform(link.platform) && link.platform !== "website" && link.platform !== "other";
+  // "X (Twitter)" in the dashboard's list; just "X" here.
+  const label = known ? platformLabel(link.platform).replace(/\s*\(.*\)$/, "") : link.label;
+  const sameAsPlatform = [label, platformLabel(link.platform)].some((name) => name.trim().toLowerCase() === link.label.trim().toLowerCase());
+  const value = sameAsPlatform ? displayUrl(link.url) : link.label;
+  return { key: link.id, icon: <SocialLinkIcon platform={link.platform} iconSvg={link.iconSvg} />, label, value, href: link.url, external: true };
+}
 
 export async function ContactPageView() {
-  const [site, page] = await Promise.all([getSiteSettings(), getPage("contact")]);
-  const { contact, address, social } = site;
+  const [site, page, socialLinks] = await Promise.all([getSiteSettings(), getPage("contact"), getSocialLinks()]);
+  const { contact, address } = site;
   // The header, the visit note and the checklist (dashboard → Pages → Contact).
   const copy = pageCopy("contact", page.content);
+  // WhatsApp, call and email from the studio's details, then its profiles (Settings → Social links).
   const channels: Channel[] = [
-    { icon: <WhatsAppIcon className="h-5 w-5" />, label: "WhatsApp", value: contact.whatsappDisplay, href: whatsappUrl(contact.whatsapp), external: true },
-    { icon: <Phone className="h-5 w-5" aria-hidden />, label: "Call", value: contact.phone, href: contact.phoneHref },
-    { icon: <Mail className="h-5 w-5" aria-hidden />, label: "Email", value: contact.email, href: `mailto:${contact.email}` },
-    { icon: <FacebookIcon className="h-5 w-5" />, label: "Facebook", value: site.name, href: social.facebook, external: true },
-    { icon: <YouTubeIcon className="h-5 w-5" />, label: "YouTube", value: "Our films", href: social.youtube, external: true },
+    { key: "whatsapp", icon: <WhatsAppIcon className="h-5 w-5" />, label: "WhatsApp", value: contact.whatsappDisplay, href: contact.whatsapp ? whatsappUrl(contact.whatsapp) : "", external: true },
+    { key: "call", icon: <Phone className="h-5 w-5" aria-hidden />, label: "Call", value: contact.phone, href: contact.phoneHref },
+    { key: "email", icon: <Mail className="h-5 w-5" aria-hidden />, label: "Email", value: contact.email, href: contact.email ? `mailto:${contact.email}` : "" },
+    ...socialLinks.filter((link) => !isOwnWhatsappChat(link, contact.whatsapp)).map(socialChannel),
   ].filter((channel) => channel.href && channel.value);
 
   return (
     <main>
-      <JsonLd data={localBusinessJsonLd(site)} />
+      <JsonLd data={localBusinessJsonLd(site, socialLinks)} />
       <Container className="pt-10 pb-20">
         <SectionHeading
           as="h1"
@@ -39,10 +51,11 @@ export async function ContactPageView() {
         />
 
         <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
-          <div className="flex flex-col gap-8">
+          {/* min-w-0: a long profile address truncates instead of widening the column on phones. */}
+          <div className="flex min-w-0 flex-col gap-8">
             <ul className="divide-y divide-line rounded-panel border border-line bg-surface">
               {channels.map((channel) => (
-                <li key={channel.label}>
+                <li key={channel.key}>
                   <a
                     href={channel.href}
                     {...(channel.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}

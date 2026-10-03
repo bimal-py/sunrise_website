@@ -6,8 +6,8 @@ type Redirect = Awaited<ReturnType<NonNullable<NextConfig["redirects"]>>>[number
 type SavedRedirect = { source: string; destination: string; permanent: boolean };
 
 // The same rules as features/redirects/domain/redirect-rules.ts (this file can't import app code).
-/** Film, service, print and blog detail pages look redirects up themselves (redirectOrNotFound). */
-const DETAIL_PATH = /^\/(films|services|prints|blogs)\/[^/]+$/;
+/** Film, service, print, blog and product detail pages look redirects up themselves (redirectOrNotFound). */
+const DETAIL_PATH = /^\/(films|services|prints|blogs|merchandise)\/[^/]+$/;
 const PROTECTED_PATH = /^\/(dashboard|api|_next)(\/|$)/i;
 const BASE = "http://n";
 
@@ -87,7 +87,7 @@ function toNextRedirects(rows: SavedRedirect[]): Redirect[] {
 /**
  * Redirects saved in the dashboard (Settings → Redirects), read once per build. They're for
  * arbitrary old addresses, e.g. pages of the previous Astro site, which no route here would
- * ever catch. Old film, service, print and blog addresses are left out: their detail pages
+ * ever catch. Old film, service, print, blog and product addresses are left out: their detail pages
  * look redirects up the moment a slug isn't found (features/site/data/redirects.repository.ts),
  * so a rename works without a deploy and a live page always wins over a stale redirect.
  * Any failure means building without them: a redirect is never worth a failed deploy.
@@ -110,10 +110,87 @@ async function savedRedirects(): Promise<Redirect[]> {
   }
 }
 
+const isDev = process.env.NODE_ENV === "development";
+// Vercel's toolbar (comments, feedback) runs on preview deployments only.
+const isPreview = process.env.VERCEL_ENV === "preview";
+
+function originOf(value: string | undefined): string {
+  try {
+    return value ? new URL(value).origin : "";
+  } catch {
+    return "";
+  }
+}
+
+const SUPABASE = originOf(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const CLARITY_SCRIPTS = ["https://www.clarity.ms", "https://scripts.clarity.ms"];
+const CLARITY_BEACONS = ["https://*.clarity.ms", "https://c.bing.com"];
+const ICONIFY = "https://api.iconify.design"; // dashboard icon search + icon previews
+const VERCEL_LIVE = isPreview ? ["https://vercel.live"] : [];
+
+function policy(directives: Record<string, string[]>): string {
+  return Object.entries(directives)
+    .map(([name, values]) => [name, ...values.filter(Boolean)].join(" "))
+    .join("; ");
+}
+
+/**
+ * Pages are static (CLAUDE.md §11), so Next's inline scripts can't carry a nonce and
+ * script-src keeps 'unsafe-inline'. The rest still earns its keep: no foreign scripts,
+ * frames, fetches or beacons, no plugins, no <base>, no foreign form targets, no framing.
+ * Tested against the live pages (home, films + YouTube player, blog, services, prints,
+ * contact, about, login) with zero violations.
+ */
+const SITE_CSP = policy({
+  "default-src": ["'self'"],
+  "script-src": ["'self'", "'unsafe-inline'", ...CLARITY_SCRIPTS, ...(isDev ? ["'unsafe-eval'"] : []), ...VERCEL_LIVE],
+  "style-src": ["'self'", "'unsafe-inline'", ...VERCEL_LIVE],
+  "img-src": ["'self'", "data:", "blob:", SUPABASE, ...CLARITY_BEACONS, ICONIFY, ...VERCEL_LIVE, ...(isPreview ? ["https://vercel.com"] : [])],
+  "font-src": ["'self'", ...(isPreview ? ["https://vercel.live", "https://assets.vercel.com"] : [])],
+  "connect-src": ["'self'", SUPABASE, ...CLARITY_BEACONS, ICONIFY, ...(isDev ? ["ws:"] : []), ...(isPreview ? ["https://vercel.live", "wss://ws-us3.pusher.com"] : [])],
+  "frame-src": ["https://www.youtube-nocookie.com", ...VERCEL_LIVE],
+  "media-src": ["'self'"],
+  "manifest-src": ["'self'"],
+  "worker-src": ["'self'", "blob:"],
+  "object-src": ["'none'"],
+  "base-uri": ["'self'"],
+  "form-action": ["'self'"],
+  "frame-ancestors": ["'none'"],
+  ...(isDev ? {} : { "upgrade-insecure-requests": [] }),
+});
+
+/**
+ * Every path except root files (single-segment names with an extension, and
+ * /api/root-files/*): those get their own CSP (sandbox) from their route.
+ */
+const NOT_ROOT_FILES = "/:path((?!api/root-files/)(?![^/]*\\.[A-Za-z0-9]{1,8}$).*)";
+const ROOT_FILES = "/:name([A-Za-z0-9][A-Za-z0-9._-]*\\.[A-Za-z0-9]{1,8})";
+
+const SECURITY_HEADERS = [
+  { key: "Content-Security-Policy", value: SITE_CSP },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // Only features the site never uses; the YouTube iframe's own allow= list is left alone.
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), midi=(), magnetometer=(), display-capture=(), browsing-topics=()",
+  },
+];
+
+/** Root files: the transport headers only; the route sets Content-Type, nosniff and its own CSP. */
+const FILE_HEADERS = SECURITY_HEADERS.filter(({ key }) => key === "Strict-Transport-Security" || key === "Referrer-Policy");
+
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   experimental: {
     // Dashboard photo uploads (shrunk to under 4 MB in the browser; Vercel's cap is 4.5 MB).
     serverActions: { bodySizeLimit: "4.5mb" },
+    // The stylesheet goes inside the HTML, so the first paint doesn't wait for a second
+    // request (measured: about 1.3 s sooner on a slow mobile first visit).
+    inlineCss: true,
   },
   images: {
     // Images are pre-built (scripts/optimize-images.py) and picked by our own
@@ -129,6 +206,18 @@ const nextConfig: NextConfig = {
     // browsers and the CDN can keep them for a year without re-checking.
     const immutable = [{ key: "Cache-Control", value: `public, max-age=${YEAR}, immutable` }];
     return [
+      { source: NOT_ROOT_FILES, headers: SECURITY_HEADERS },
+      { source: ROOT_FILES, headers: FILE_HEADERS },
+      { source: "/api/root-files/:name*", headers: FILE_HEADERS },
+      // The dashboard: never indexed (also non-HTML responses), no referrer to other sites.
+      {
+        source: "/dashboard/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
       { source: "/images/:path*", headers: immutable },
       { source: "/brand/:path*", headers: immutable },
     ];

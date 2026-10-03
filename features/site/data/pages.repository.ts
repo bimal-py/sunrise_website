@@ -20,7 +20,7 @@ export type PageData = {
 
 const empty = (key: PageKey): PageData => ({ key, content: {}, body: "", seoTitle: "", seoDescription: "", ogImage: null, updatedAt: null });
 
-// All eight rows in one entry, cached until a save calls updateTag(TAG.pages).
+// Every page's row in one entry, cached until a save calls updateTag(TAG.pages).
 const loadPages = unstable_cache(
   async (): Promise<PageData[]> => {
     const { data, error } = await readClient().from("pages").select("*");
@@ -43,9 +43,3 @@ export const getPage = cache(async (key: PageKey): Promise<PageData> => {
   if (!isSupabaseConfigured) return empty(key);
   return (await loadPages()).find((page) => page.key === key) ?? empty(key);
 });
-
-/** A copy field of a page: the saved text, or `fallback` when it's empty. */
-export function pageText(page: PageData, field: string, fallback: string): string {
-  const value = page.content[field];
-  return typeof value === "string" && value.trim() ? value : fallback;
-}

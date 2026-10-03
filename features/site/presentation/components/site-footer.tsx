@@ -6,18 +6,36 @@ import { routes } from "@/lib/routes";
 import { serviceRepository } from "@/features/services/data/services.repository";
 import { printRepository } from "@/features/prints/data/prints.repository";
 import { getSiteSettings } from "@/features/site/data/settings.repository";
+import { getSocialLinks } from "@/features/site/data/social-links.repository";
+import { isOwnWhatsappChat } from "@/features/site/domain/social-link";
 import { Logo } from "@/shared/components/brand/logo";
-import { FacebookIcon, WhatsAppIcon, YouTubeIcon } from "@/shared/components/brand/social-icons";
+import { SocialLinkIcon, WhatsAppIcon } from "@/shared/components/brand/social-icons";
 import { Container } from "@/shared/components/ui/container";
 
 const heading = "text-[11px] font-semibold uppercase tracking-[0.14em] text-primary";
 const link = "inline-block py-1.5 text-muted transition-colors duration-150 hover:text-primary";
 const round = "flex size-10 items-center justify-center rounded-full border border-line-strong text-foreground transition-colors duration-150 hover:border-primary hover:text-primary";
 
+/** "Explore": the pages without a column of their own, in the nav's order (Merchandise after Blog). */
+const EXPLORE = ["films", "about", "blog", "merchandise", "contact"];
+
+function exploreLinks(): { id: string; label: string; route: string }[] {
+  const items: { id: string; label: string; route: string }[] = navItems
+    .filter((item) => EXPLORE.includes(item.id))
+    .map(({ id, label, route }) => ({ id, label, route }));
+  if (!items.some((item) => item.id === "merchandise")) {
+    const afterBlog = items.findIndex((item) => item.id === "blog") + 1;
+    items.splice(afterBlog > 0 ? afterBlog : items.length, 0, { id: "merchandise", label: "Merchandise", route: routes.merchandise() });
+  }
+  return items;
+}
+
 export async function SiteFooter() {
   const year = new Date().getFullYear();
-  const [services, prints, site] = await Promise.all([serviceRepository.list(), printRepository.list(), getSiteSettings()]);
-  const { contact, address, social } = site;
+  const [services, prints, site, socialLinks] = await Promise.all([serviceRepository.list(), printRepository.list(), getSiteSettings(), getSocialLinks()]);
+  const { contact, address } = site;
+  // The studio's profiles (Settings → Social links), then WhatsApp from the studio's number.
+  const profiles = socialLinks.filter((link) => !isOwnWhatsappChat(link, contact.whatsapp));
 
   return (
     // pb-28 below lg: room for the mobile dock so it never covers the copyright line.
@@ -28,23 +46,22 @@ export async function SiteFooter() {
           <p className="max-w-sm text-sm text-muted">
             {site.footerBlurb}
           </p>
-          <div className="flex gap-2">
-            {social.facebook && (
-              <a href={social.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={round}>
-                <FacebookIcon className="h-4 w-4" />
-              </a>
-            )}
-            {social.youtube && (
-              <a href={social.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={round}>
-                <YouTubeIcon className="h-4 w-4" />
-              </a>
-            )}
+          <ul className="flex flex-wrap gap-2">
+            {profiles.map((link) => (
+              <li key={link.id}>
+                <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.label} className={round}>
+                  <SocialLinkIcon platform={link.platform} iconSvg={link.iconSvg} className="h-4 w-4" />
+                </a>
+              </li>
+            ))}
             {contact.whatsapp && (
-              <a href={whatsappUrl(contact.whatsapp)} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className={round}>
-                <WhatsAppIcon className="h-4 w-4" />
-              </a>
+              <li>
+                <a href={whatsappUrl(contact.whatsapp)} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className={round}>
+                  <WhatsAppIcon className="h-4 w-4" />
+                </a>
+              </li>
             )}
-          </div>
+          </ul>
         </div>
 
         <nav aria-label="Services">
@@ -76,15 +93,13 @@ export async function SiteFooter() {
           <nav aria-label="Explore">
             <h2 className={heading}>Explore</h2>
             <ul className="mt-3 flex flex-col text-sm">
-              {navItems
-                .filter((item) => ["films", "blog", "about", "contact"].includes(item.id))
-                .map((item) => (
-                  <li key={item.id}>
-                    <Link href={item.route} className={link}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
+              {exploreLinks().map((item) => (
+                <li key={item.id}>
+                  <Link href={item.route} className={link}>
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
         </div>

@@ -41,15 +41,17 @@ export function PagedGrid({ targets, pageSize, noun, className, children }: { ta
     <>
       <div className={className}>
         {items.map((child, index) => (
-          <div key={index} data-paged-item className="min-w-0" hidden={!visible.has(index)}>
+          <div key={index} data-paged-item className={visible.has(index) ? "min-w-0" : "hidden min-w-0"}>
             {child}
           </div>
         ))}
       </div>
-      {/* Without JavaScript nothing filters or pages: show every card. */}
-      <noscript dangerouslySetInnerHTML={{ __html: "<style>[data-paged-item][hidden]{display:block!important}</style>" }} />
+      {/* Without JavaScript nothing filters or pages: show every card (and drop the "12 of 40" count).
+          Hidden by class, not the hidden attribute: Tailwind's base layer hides [hidden] with !important,
+          which an unlayered rule like this one can't override. */}
+      <noscript dangerouslySetInnerHTML={{ __html: "<style>[data-paged-item].hidden{display:block!important}[data-paged-status]{display:none!important}</style>" }} />
       {matched.length > pageSize && (
-        <div className="mt-10 flex flex-col items-center gap-4">
+        <div data-paged-status className="mt-10 flex flex-col items-center gap-4">
           {hasMore && <div ref={sentinel} aria-hidden className="h-px w-full" />}
           <p role="status" className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
             {hasMore ? `${shown} of ${matched.length} ${noun}` : `All ${matched.length} ${noun}`}
