@@ -15,7 +15,7 @@ type Table<Row, Required extends keyof Row> = {
 };
 
 export type FilmCategoryValue = "weddings" | "ceremonies" | "culture";
-export type PageKey = "home" | "services" | "prints" | "films" | "blogs" | "about" | "contact" | "privacy";
+export type PageKey = "home" | "services" | "prints" | "films" | "blogs" | "about" | "contact" | "privacy" | "merchandise";
 export type PrintMockup = "album" | "frame" | "canvas" | "loose-prints" | "book";
 export type MessageStatus = "new" | "read" | "replied" | "archived";
 export type ReviewSource = "Facebook" | "Google" | "YouTube" | "In person";
@@ -63,6 +63,9 @@ export type SiteSettingsRow = {
   bing_site_verification: string;
   indexnow_key: string;
   clarity_id: string;
+  /** YouTube sync: newly found films go on the site at once (else hidden until checked). */
+  films_auto_publish: boolean;
+  youtube_synced_at: string | null;
   updated_at: string;
 };
 
@@ -106,6 +109,8 @@ export type FilmRow = {
   thumbnail: ImageAsset | null;
   seo_title: string;
   seo_description: string;
+  duration_seconds: number | null;
+  age_restricted: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -116,6 +121,9 @@ type OfferingColumns = {
   name: string;
   name_ne: string;
   icon: OfferingIcon;
+  /** Iconify id ("lucide:camera") or URL the icon came from; icon_svg is its cleaned markup. */
+  icon_source: string;
+  icon_svg: string | null;
   summary: string;
   intro: string[];
   sections: ContentSection[];
@@ -190,6 +198,67 @@ export type ReviewRow = {
   updated_at: string;
 };
 
+export type ProductStockStatus = "in_stock" | "low_stock" | "out_of_stock" | "made_to_order" | "preorder";
+export type ProductImageValue = ImageAsset & { alt: string };
+export type ProductOptionValue = { name: string; values: string[] };
+export type ProductVariantValue = {
+  id: string;
+  options: Record<string, string>;
+  price: number | null;
+  compareAtPrice: number | null;
+  sku: string;
+  stockStatus: ProductStockStatus;
+  imageIndex: number | null;
+};
+
+export type ProductCategoryRow = {
+  id: string;
+  slug: string;
+  name: string;
+  name_ne: string;
+  description: string;
+  image: ImageAsset | null;
+  published: boolean;
+  sort_order: number;
+  seo_title: string;
+  seo_description: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProductRow = {
+  id: string;
+  slug: string;
+  name: string;
+  name_ne: string;
+  category_id: string | null;
+  summary: string;
+  description: string;
+  highlights: string[];
+  images: ProductImageValue[];
+  price: number;
+  compare_at_price: number | null;
+  currency: string;
+  sku: string;
+  stock_status: ProductStockStatus;
+  stock_quantity: number | null;
+  options: ProductOptionValue[];
+  variants: ProductVariantValue[];
+  specifications: { label: string; value: string }[];
+  delivery_info: string;
+  warranty_info: string;
+  min_order_quantity: number;
+  max_order_quantity: number | null;
+  featured: boolean;
+  published: boolean;
+  sort_order: number;
+  seo_title: string;
+  seo_description: string;
+  og_image: ImageAsset | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type MessageRow = {
   id: string;
   name: string;
@@ -203,6 +272,16 @@ export type MessageRow = {
   status: MessageStatus;
   ip_hash: string | null;
   user_agent: string;
+  /** "order" = sent from a product page (merchandise). */
+  kind: "enquiry" | "order";
+  product_id: string | null;
+  product_name: string;
+  product_slug: string;
+  variant_label: string;
+  quantity: number | null;
+  unit_price: number | null;
+  currency: string;
+  address: string;
   created_at: string;
   updated_at: string;
 };
@@ -212,6 +291,8 @@ export type RootFileRow = {
   file_name: string;
   content_type: string;
   body: string;
+  /** An uploaded file in the `files` bucket served instead of `body`. */
+  storage_path: string | null;
   published: boolean;
   note: string;
   created_at: string;
@@ -230,6 +311,19 @@ export type RedirectRow = {
 
 export type AdminRow = { user_id: string; email: string; created_at: string };
 
+export type SocialLinkRow = {
+  id: string;
+  platform: string;
+  label: string;
+  url: string;
+  icon_source: string;
+  icon_svg: string | null;
+  sort_order: number;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -245,9 +339,15 @@ export type Database = {
       messages: Table<MessageRow, "name">;
       root_files: Table<RootFileRow, "file_name">;
       redirects: Table<RedirectRow, "source" | "destination">;
+      product_categories: Table<ProductCategoryRow, "slug" | "name">;
+      products: Table<ProductRow, "slug" | "name">;
+      social_links: Table<SocialLinkRow, "platform" | "label" | "url">;
     };
     Views: { [_ in never]: never };
-    Functions: { is_admin: { Args: Record<PropertyKey, never>; Returns: boolean } };
+    Functions: {
+      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      storage_usage: { Args: Record<PropertyKey, never>; Returns: { bucket_id: string; objects: number; bytes: number }[] };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

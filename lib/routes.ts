@@ -27,6 +27,9 @@ export const routes = {
     const query = params.toString();
     return query ? `/blogs?${query}` : "/blogs";
   },
+  merchandise: () => "/merchandise",
+  product: (slug: string) => `/merchandise/${slug}`,
+  merchandiseCategory: (category: string) => `/merchandise?category=${category}`,
   about: () => "/about",
   contact: () => "/contact",
   privacy: () => "/privacy",

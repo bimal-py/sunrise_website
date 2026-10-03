@@ -11,7 +11,6 @@ import { serviceRepository } from "@/features/services/data/services.repository"
 import { InquiryCard } from "@/shared/components/content/inquiry-card";
 import { OfferingArticle } from "@/shared/components/content/offering-article";
 import { OfferingCard } from "@/shared/components/content/offering-card";
-import { OfferingIcon } from "@/shared/components/content/offering-icon";
 import { Breadcrumbs } from "@/shared/components/navigation/breadcrumbs";
 import { JsonLd } from "@/shared/components/seo/json-ld";
 import { Container } from "@/shared/components/ui/container";
@@ -40,8 +39,7 @@ export async function ServiceDetailPageView({ slug }: { slug: string }) {
         <Breadcrumbs crumbs={crumbs} />
 
         <header className="mt-6 max-w-3xl">
-          <OfferingIcon name={service.icon} className="h-6 w-6" />
-          <h1 className="mt-4 text-[40px] sm:text-[52px]">{service.name}</h1>
+          <h1 className="text-[40px] sm:text-[52px]">{service.name}</h1>
           <p lang="ne" className="mt-1 text-lg text-foreground">
             {service.nameNe}
           </p>

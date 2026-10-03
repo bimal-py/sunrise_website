@@ -15,7 +15,7 @@ export default async function NewServiceFormPage() {
     supabase.from("prints").select("id, name").order("sort_order"),
   ]);
   const blank = {
-    id: "", slug: "", name: "", name_ne: "", icon: "Camera" as const, summary: "", intro: [], sections: [], faqs: [], inquiry: "",
+    id: "", slug: "", name: "", name_ne: "", icon: "Camera" as const, icon_source: "", icon_svg: null, summary: "", intro: [], sections: [], faqs: [], inquiry: "",
     service_type: "", featured: false, published: true, sort_order: sortOrder, og_image: null, seo_title: "", seo_description: "",
     short_name: "", cover_film_id: null, film_category: null, related_print_ids: [],
   };

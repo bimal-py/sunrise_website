@@ -14,7 +14,7 @@ export default async function NewPrintFormPage() {
     nextSortOrder(supabase, "prints"),
   ]);
   const blank = {
-    id: "", slug: "", name: "", name_ne: "", icon: "Camera" as const, summary: "", intro: [], sections: [], faqs: [], inquiry: "",
+    id: "", slug: "", name: "", name_ne: "", icon: "Camera" as const, icon_source: "", icon_svg: null, summary: "", intro: [], sections: [], faqs: [], inquiry: "",
     service_type: "", featured: false, published: true, sort_order: sortOrder, og_image: null, seo_title: "", seo_description: "",
     highlight: "", options_heading: "", options: [], mockup: null, preview_film_ids: [],
   };

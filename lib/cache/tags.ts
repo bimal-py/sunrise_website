@@ -13,6 +13,8 @@ export const TAG = {
   prints: "prints",
   posts: "posts",
   reviews: "reviews",
+  /** Merchandise: products and their categories. */
+  products: "products",
   redirects: "redirects",
 } as const;
 

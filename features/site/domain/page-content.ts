@@ -230,6 +230,24 @@ export const PAGE_DEFINITIONS = {
         "Book Sunrise Photo Studio for your wedding, pasni, bratabandha or portraits: WhatsApp, phone, email, and the studio's address in Arjunchaupari, Syangja.",
     },
   },
+  merchandise: {
+    label: "Merchandise",
+    path: routes.merchandise(),
+    summary: "The shop's header and lede",
+    fields: [
+      ...header({
+        eyebrow: "Merchandise",
+        title: "Merchandise",
+        titleNe: "सामानहरू",
+        lede: "Things you can order from the studio. Choose what you like and send us your order: we'll contact you to confirm it.",
+      }),
+    ],
+    hasBody: false,
+    seo: {
+      title: "Merchandise from Sunrise Photo Studio",
+      description: "Order products from Sunrise Photo Studio in Syangja: send your order online and the studio contacts you to confirm it.",
+    },
+  },
   privacy: {
     label: "Privacy",
     path: routes.privacy(),
